@@ -1,0 +1,33 @@
+flowchart TD
+  A[Start Align align] --> B[AlignmentParameters load params]
+  B --> C[Align populate score matrices]
+
+  subgraph Init [Initialize score and pointer matrices]
+    direction TB
+    C --> D[Compute sizes rows len seqB plus 1 cols len seqA plus 1]
+    D --> E[Create M Ix Iy numpy arrays rows x cols]
+    E --> F[Create pointer matrices PM PIx PIy same shape]
+    F --> G[Set 0 0 equals 0 for M Ix Iy]
+    G --> H[Set first row 0 j equals 0 for all j]
+    H --> I[Set first col i 0 equals 0 for all i]
+  end
+
+  I --> J{Traverse cells i 1 to rows minus 1 and j 1 to cols minus 1}
+
+  subgraph UpdateCell [Update per cell i j]
+    direction TB
+    J --> K[Update M i j from max of M Ix Iy at i minus 1 j minus 1 plus s xj yi store ties in PM]
+    K --> L[Update Ix i j from max of M i minus 1 j minus dy and Ix i minus 1 j minus ey store ties in PIx]
+    L --> M[Update Iy i j from max of M i j minus 1 minus dx and Iy i j minus 1 minus ex store ties in PIy]
+    M --> N{Mode}
+    N --> O[Local clamp negatives to 0 clear pointers if clamped]
+    N --> P[Global ends free keep values ends free via 0 initialized first row and col]
+  end
+
+  O --> Q[Advance to next cell]
+  P --> Q
+
+  Q --> R[find traceback start choose start cells]
+  R --> S[traceback enumerate all optimal paths using PM PIx PIy]
+  S --> T[write output best score one decimal and alignments]
+  T --> U[End]
