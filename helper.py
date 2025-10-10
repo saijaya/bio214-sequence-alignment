@@ -1,4 +1,33 @@
 import pandas as pd
+import numpy as np
+
+
+def read_matrix_cell(matrix, row, col):
+    """
+    Get score from numpy matrix using 1-based indexing.
+    
+    Args:
+        matrix: numpy array
+        row: row number (1-based)
+        col: column number (1-based)
+    
+    Returns:
+        score at position (row, col)
+    """
+    return matrix[row-1, col-1]
+
+
+def write_matrix_cell(matrix, row, col, score):
+    """
+    Set score in numpy matrix using 1-based indexing.
+    
+    Args:
+        matrix: numpy array
+        row: row number (1-based)
+        col: column number (1-based)
+        score: value to set
+    """
+    matrix[row-1, col-1] = score
 
 
 def read_input_file(filename):

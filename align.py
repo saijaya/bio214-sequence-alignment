@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 """
 
 This file provides skeleton code for align.py. 
@@ -15,6 +12,36 @@ Usage: python align.py input_file output_file
 
 
 import sys
+import pandas as pd
+import numpy as np
+
+
+def read_matrix_cell(matrix, row, col):
+    """
+    Get score from numpy matrix using 1-based indexing.
+    
+    Args:
+        matrix: numpy array
+        row: row number (1-based)
+        col: column number (1-based)
+    
+    Returns:
+        score at position (row, col)
+    """
+    return matrix[row-1, col-1]
+
+
+def write_matrix_cell(matrix, row, col, score):
+    """
+    Set score in numpy matrix using 1-based indexing.
+    
+    Args:
+        matrix: numpy array
+        row: row number (1-based)
+        col: column number (1-based)
+        score: value to set
+    """
+    matrix[row-1, col-1] = score
 
 
 #### ------ USEFUL FUNCTIONS ------- ####
@@ -151,18 +178,18 @@ class AlignmentParameters(object):
 
         input_params_dict = read_input_file(input_file)
         print_input_params(input_params_dict)
-        self.seq_a = input_params_dict["seq_a"]
-        self.seq_b = input_params_dict["seq_b"]
-        self.global_alignment = input_params_dict["global_alignment"]
+        self.seq_a = str(input_params_dict["seq_a"])
+        self.seq_b = str(input_params_dict["seq_b"])
+        self.global_alignment = bool(input_params_dict["global_alignment"])
         self.dx = float(input_params_dict["dx"])
         self.ex = float(input_params_dict["ex"])
         self.dy = float(input_params_dict["dy"])
         self.ey = float(input_params_dict["ey"])
-        self.alphabet_a = input_params_dict["alphabet_a"]
-        self.alphabet_b = input_params_dict["alphabet_b"]
-        self.len_alphabet_a = input_params_dict["len_alphabet_a"]
-        self.len_alphabet_b = input_params_dict["len_alphabet_b"]
-        self.match_matrix = MatchMatrix()
+        self.alphabet_a = str(input_params_dict["alphabet_a"])
+        self.alphabet_b = str(input_params_dict["alphabet_b"])
+        self.len_alphabet_a = int(input_params_dict["len_alphabet_a"])
+        self.len_alphabet_b = int(input_params_dict["len_alphabet_b"])
+        self.match_matrix = input_params_dict["match_matrix"]
 
 
 class Align(object):
@@ -210,6 +237,14 @@ class Align(object):
         """
 
         ### TO-DO! FILL IN ###
+        num_rows_in_score_matrices = self.align_params.len_alphabet_a+1
+        num_columns_in_score_matrices = self.align_params.len_alphabet_b + 1
+
+        M_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        Ix_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        Iy_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+
+        print(M_score_matrix)
 
     def update(self, row, col):
         """
