@@ -162,6 +162,8 @@ class AlignmentParameters(object):
         self.len_alphabet_a = int(input_params_dict["len_alphabet_a"])
         self.len_alphabet_b = int(input_params_dict["len_alphabet_b"])
         self.match_matrix = input_params_dict["match_matrix"]
+        print("hahahaha")
+        print(type(self.match_matrix))
 
 
 class Align(object):
@@ -177,7 +179,7 @@ class Align(object):
         """
         self.input_file = input_file
         self.output_file = output_file
-        self.align_params = AlignmentParameters() 
+        self.align_params = AlignmentParameters()
 
         # Note the below three lines is ensure the autograder runs properly.
         # You should leave the below three lines as is but then
@@ -212,11 +214,28 @@ class Align(object):
         num_rows_in_score_matrices = self.align_params.len_alphabet_a+1
         num_columns_in_score_matrices = self.align_params.len_alphabet_b + 1
 
-        M_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
-        Ix_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
-        Iy_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.M_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.M_score_matrix[0, :] = 0.0
+        self.M_score_matrix[:, 0] = 0.0
+        self.M_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
 
-        print(M_score_matrix)
+        self.Ix_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.Ix_score_matrix[0, :] = 0.0
+        self.Ix_score_matrix[:, 0] = 0.0
+        self.Ix_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+
+        self.Iy_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
+        self.Iy_score_matrix[0, :] = 0.0
+        self.Iy_score_matrix[:, 0] = 0.0
+        self.Iy_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
+
+        print(self.M_score_matrix)
+
+        # Start with (1,1)
+        self.update(row=1, col=1)
+        print(self.M_score_matrix)
+        print(self.M_score_direction_matrix)
+
 
     def update(self, row, col):
         """
@@ -232,7 +251,47 @@ class Align(object):
 
     def update_m(self, row, col):
         ### TO-DO! FILL IN ###
-        pass
+
+        match_matrix = pd.DataFrame(self.align_params.match_matrix)
+        seq_A = self.align_params.seq_a
+        seq_B = self.align_params.seq_b
+        score_record = match_matrix[match_matrix["seq_A_residue"] == seq_A[row]]
+        score_record = score_record[match_matrix["seq_B_residue"] == seq_B[col]]
+        print("\n")
+        s_ij_match = float(list(score_record["score"])[0])
+        print(s_ij_match)
+
+        M_score_matrix = self.M_score_matrix
+        M_score_direction_matrix = self.M_score_direction_matrix
+
+        score_from_M = self.M_score_matrix[row-1, col-1] + s_ij_match
+        score_from_Ix = self.Ix_score_matrix[row-1, col-1] + s_ij_match
+        score_from_Iy = self.Iy_score_matrix[row-1, col-1] + s_ij_match
+
+        max_score = max(score_from_M, score_from_Ix, score_from_Iy)
+        M_score_matrix[row, col] = max_score
+        self.M_score_matrix = M_score_matrix
+
+        if type(M_score_direction_matrix[row, col]) != list:
+            M_score_direction_matrix[row, col] = list()
+
+        if fuzzy_equals(score_from_M, max_score):
+            pointers = M_score_direction_matrix[row, col]
+            pointers.append("M")
+            M_score_direction_matrix[row, col] = pointers
+
+        if fuzzy_equals(score_from_Ix, max_score):
+            pointers = M_score_direction_matrix[row, col]
+            pointers.append("Ix")
+            M_score_direction_matrix[row, col] = pointers
+
+        if fuzzy_equals(score_from_Iy, max_score):
+            pointers = M_score_direction_matrix[row, col]
+            pointers.append("Iy")
+            M_score_direction_matrix[row, col] = pointers
+
+        self.M_score_direction_matrix = M_score_direction_matrix
+
 
     def update_ix(self, row, col):
         ### TO-DO! FILL IN ###
@@ -326,7 +385,7 @@ def read_input_file(filename):
     if len(matrix_data) != expected_entries:
         raise ValueError(f"Expected {expected_entries} matrix entries but found {len(matrix_data)}")
 
-    input_params['match_matrix'] = pd.DataFrame(matrix_data)
+    input_params['match_matrix'] = matrix_data
     return input_params
 
 
