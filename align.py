@@ -1,3 +1,5 @@
+import pandas as pd
+
 
 """
 
@@ -146,8 +148,21 @@ class AlignmentParameters(object):
         Input:
            input_file = specially formatted alignment input file
         """
-        ### TO-DO! FILL IN ###
 
+        input_params_dict = read_input_file(input_file)
+        print_input_params(input_params_dict)
+        self.seq_a = input_params_dict["seq_a"]
+        self.seq_b = input_params_dict["seq_b"]
+        self.global_alignment = input_params_dict["global_alignment"]
+        self.dx = float(input_params_dict["dx"])
+        self.ex = float(input_params_dict["ex"])
+        self.dy = float(input_params_dict["dy"])
+        self.ey = float(input_params_dict["ey"])
+        self.alphabet_a = input_params_dict["alphabet_a"]
+        self.alphabet_b = input_params_dict["alphabet_b"]
+        self.len_alphabet_a = input_params_dict["len_alphabet_a"]
+        self.len_alphabet_b = input_params_dict["len_alphabet_b"]
+        self.match_matrix = MatchMatrix()
 
 
 class Align(object):
@@ -243,12 +258,14 @@ class Align(object):
         ### TO-DO! FILL IN ###
         pass
 
+
 def write_output(self):
     ### TO-DO! FILL IN ###
     pass
 
+
 def read_input_file(filename):
-    data = {}
+    input_params = {}
 
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -262,49 +279,54 @@ def read_input_file(filename):
         if line:
             clean.append(line)
 
-    # grab the data
-    data['seq_a'] = clean[0]
-    data['seq_b'] = clean[1]
-    data['global_alignment'] = (int(clean[2]) == 0)
+    # grab the input_params
+    input_params['seq_a'] = clean[0]
+    input_params['seq_b'] = clean[1]
+
+    # parse mode flag with validation
+    mode = int(clean[2])
+    if mode not in [0, 1]:
+        raise ValueError(f"Invalid mode flag: {mode}. Must be 0 (global) or 1 (local)")
+    input_params['global_alignment'] = (mode == 0)
 
     # gap penalties
     gaps = clean[3].split()
-    data['dx'] = float(gaps[0])
-    data['ex'] = float(gaps[1])
-    data['dy'] = float(gaps[2])
-    data['ey'] = float(gaps[3])
+    input_params['dx'] = float(gaps[0])
+    input_params['ex'] = float(gaps[1])
+    input_params['dy'] = float(gaps[2])
+    input_params['ey'] = float(gaps[3])
 
     # alphabets
-    data['len_alphabet_a'] = int(clean[4])
-    data['alphabet_a'] = clean[5]
-    data['len_alphabet_b'] = int(clean[6])
-    data['alphabet_b'] = clean[7]
+    input_params['len_alphabet_a'] = int(clean[4])
+    input_params['alphabet_a'] = clean[5]
+    input_params['len_alphabet_b'] = int(clean[6])
+    input_params['alphabet_b'] = clean[7]
 
-    # match matrix
-    data['match_matrix_entries'] = []
+    # match matrix as pandas DataFrame
+    matrix_data = []
     for i in range(8, len(clean)):
         parts = clean[i].split()
         if len(parts) == 5:
-            data['match_matrix_entries'].append({
+            matrix_data.append({
                 'row': int(parts[0]),
                 'col': int(parts[1]),
-                'char_a': parts[2],
-                'char_b': parts[3],
+                'seq_A_residue': parts[2],
+                'seq_B_residue': parts[3],
                 'score': float(parts[4])
             })
 
-    return data
+    expected_entries = input_params['len_alphabet_a'] * input_params['len_alphabet_b']
+    if len(matrix_data) != expected_entries:
+        raise ValueError(f"Expected {expected_entries} matrix entries but found {len(matrix_data)}")
+
+    input_params['match_matrix'] = pd.DataFrame(matrix_data)
+    return input_params
 
 
-def print_data(data):
-    print("seq_a:", data['seq_a'])
-    print("seq_b:", data['seq_b'])
-    print("global:", data['global_alignment'])
-    print("gaps:", data['dx'], data['ex'], data['dy'], data['ey'])
-    print("alphabets:", data['alphabet_a'], data['alphabet_b'])
-    print("matrix entries:", len(data['match_matrix_entries']))
-    for entry in data['match_matrix_entries']:
-        print(f"  {entry['char_a']} {entry['char_b']}: {entry['score']}")
+def print_input_params(input_params):
+    for k, v in input_params.items():
+        print("\n" + k + ":")
+        print(v)
 
 
 def main():
@@ -318,17 +340,12 @@ def main():
     input_file = sys.argv[1]
     output_file = sys.argv[2]
 
-    # create an align object and run
-    # align = Align(input_file, output_file)
-    # align.align()
-
     print(input_file)
     print(output_file)
 
-    data = read_input_file(input_file)
-    print(data)
-
-
+    # create an align object and run
+    align = Align(input_file, output_file)
+    align.align()
 
 
 if __name__=="__main__":
