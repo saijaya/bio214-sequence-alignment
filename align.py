@@ -189,6 +189,7 @@ class Align(object):
         # Note the below three lines is ensure the autograder runs properly.
         # You should leave the below three lines as is but then
         # Initialize m_matrix, ix_matrix, and iy_matrix in populate_score_matrices
+        self.s_matrix = None
         self.m_matrix = None
         self.ix_matrix = None
         self.iy_matrix = None
@@ -224,27 +225,27 @@ class Align(object):
         num_columns_in_score_matrices = self.align_params.len_seq_b + 1
         print(f"DEBUG: Matrix size: {num_rows_in_score_matrices}x{num_columns_in_score_matrices}")
 
-        self.M_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
-        self.M_score_matrix[0, :] = 0.0
-        self.M_score_matrix[:, 0] = 0.0
-        self.M_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
+        self.m_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.m_matrix[0, :] = 0.0
+        self.m_matrix[:, 0] = 0.0
+        self.m_matrix_pointers = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
 
-        self.Ix_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
-        self.Ix_score_matrix[0, :] = 0.0
-        self.Ix_score_matrix[:, 0] = 0.0
-        self.Ix_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.ix_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
+        self.ix_matrix[0, :] = 0.0
+        self.ix_matrix[:, 0] = 0.0
+        self.ix_matrix_pointers = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
 
-        self.Iy_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
-        self.Iy_score_matrix[0, :] = 0.0
-        self.Iy_score_matrix[:, 0] = 0.0
-        self.Iy_score_direction_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
+        self.iy_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
+        self.iy_matrix[0, :] = 0.0
+        self.iy_matrix[:, 0] = 0.0
+        self.iy_matrix_pointers = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices), dtype=object)
 
-        print(self.M_score_matrix)
+        print(self.m_matrix)
 
         # Start with (1,1)
         self.update(row=1, col=1)
-        print(self.M_score_matrix)
-        print(self.M_score_direction_matrix)
+        print(self.m_matrix)
+        print(self.m_matrix_pointers)
 
 
     def update(self, row, col):
@@ -255,42 +256,52 @@ class Align(object):
            row = the row index to update
            col = the column index to update
         """
-        print(f"DEBUG: -> Updating ({row},{col})")
+
+        self.s_matrix = pd.DataFrame(self.align_params.match_matrix)
+
+        print(f"DEBUG: -> update() ({row},{col})")
+        print(f"DEBUG: -> subsequences: seq A [0:{row}] = '{self.align_params.seq_a[0:row]}', seq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
+        print(f"DEBUG: -> residues: Xi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', Yj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
         self.update_m(row, col)
         self.update_ix(row, col)
         self.update_iy(row, col)
 
     def update_m(self, row, col):
         ### TO-DO! FILL IN ###
-        print(f"DEBUG:   [M] Evaluating M[{row},{col}]")
+        print(f"DEBUG:   update_M() M[{row},{col}]")
+        print(f"DEBUG:   subsequences: -> seq A [0:{row}] = '{self.align_params.seq_a[0:row]}', seq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
+        print(f"DEBUG: -> residues: Xi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', Yj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
-        match_matrix = pd.DataFrame(self.align_params.match_matrix)
-        print("DEBUG: match_matrix:")
-        print("DEBUG:", type(match_matrix))
-        print("DEBUG:", match_matrix)
+        s_matrix = self.s_matrix
+        print("DEBUG: s_matrix:")
+        print("DEBUG:", type(s_matrix))
+        print("DEBUG:", s_matrix)
         seq_A = self.align_params.seq_a
+        curr_residue_a = seq_A[row-1]
+        print("Curr residue seq_a: "+ curr_residue_a)
         seq_B = self.align_params.seq_b
-        score_record = match_matrix[match_matrix["seq_A_residue"] == seq_A[row]]
-        score_record = score_record[match_matrix["seq_B_residue"] == seq_B[col]]
-        print("\n")
+        curr_residue_b = seq_B[col-1]
+        print("Curr residue seq_b: "+ curr_residue_b)
+
+        score_record = s_matrix[s_matrix["seq_A_residue"] == curr_residue_a]
+        score_record = score_record[s_matrix["seq_B_residue"] == curr_residue_b]
         s_ij_match = float(list(score_record["score"])[0])
-        print(f"DEBUG:   Match score: {s_ij_match}")
-        print(s_ij_match)
+        print(f"residue match score (from lookup match_matrix: {s_ij_match}")
 
-        M_score_matrix = self.M_score_matrix
-        M_score_direction_matrix = self.M_score_direction_matrix
+        M_score_matrix = self.m_matrix
+        M_score_direction_matrix = self.m_matrix_pointers
 
-        score_from_M = self.M_score_matrix[row-1, col-1] + s_ij_match
-        print(f"DEBUG:   Score from M[{row-1},{col-1}]: {self.M_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_M:.2f}")
-        score_from_Ix = self.Ix_score_matrix[row-1, col-1] + s_ij_match
-        print(f"DEBUG:   Score from Ix[{row-1},{col-1}]: {self.Ix_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_Ix:.2f}")
-        score_from_Iy = self.Iy_score_matrix[row-1, col-1] + s_ij_match
-        print(f"DEBUG:   Score from Iy[{row-1},{col-1}]: {self.Iy_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_Iy:.2f}")
+        score_from_M = self.m_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from M[{row-1},{col-1}]: {self.m_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_M:.2f}")
+        score_from_Ix = self.ix_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from Ix[{row-1},{col-1}]: {self.ix_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_Ix:.2f}")
+        score_from_Iy = self.iy_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from Iy[{row-1},{col-1}]: {self.iy_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_Iy:.2f}")
 
         max_score = max(score_from_M, score_from_Ix, score_from_Iy)
         print(f"DEBUG:   Max score chosen: {max_score:.2f}")
         M_score_matrix[row, col] = max_score
-        self.M_score_matrix = M_score_matrix
+        self.m_matrix = M_score_matrix
 
         if type(M_score_direction_matrix[row, col]) != list:
             M_score_direction_matrix[row, col] = list()
@@ -310,7 +321,7 @@ class Align(object):
             pointers.append("Iy")
             M_score_direction_matrix[row, col] = pointers
 
-        self.M_score_direction_matrix = M_score_direction_matrix
+        self.m_matrix_pointers = M_score_direction_matrix
         print(f"DEBUG:   M[{row},{col}] = {max_score:.2f}, pointers: {M_score_direction_matrix[row, col]}")
 
 
