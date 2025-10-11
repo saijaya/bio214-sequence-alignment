@@ -339,17 +339,17 @@ class Align(object):
 
         if fuzzy_equals(score_from_m_matrix, max_score):
             pointers = m_matrix_pointers[row, col]
-            pointers.append("M")
+            pointers.append(["M", row-1, col-1])
             m_matrix_pointers[row, col] = pointers
 
         if fuzzy_equals(score_from_ix_matrix, max_score):
             pointers = m_matrix_pointers[row, col]
-            pointers.append("Ix")
+            pointers.append(["Ix", row-1, col-1])
             m_matrix_pointers[row, col] = pointers
 
         if fuzzy_equals(score_from_iy_matrix, max_score):
             pointers = m_matrix_pointers[row, col]
-            pointers.append("Iy")
+            pointers.append(["Iy", row-1, col-1])
             m_matrix_pointers[row, col] = pointers
 
         self.m_matrix_pointers = m_matrix_pointers
@@ -420,12 +420,12 @@ class Align(object):
 
         if fuzzy_equals(score_from_m_matrix, max_score):
             pointers = ix_matrix_pointers[row, col]
-            pointers.append("M")
+            pointers.append(["M", row-1, col])
             ix_matrix_pointers[row, col] = pointers
 
         if fuzzy_equals(score_from_ix_matrix, max_score):
             pointers = ix_matrix_pointers[row, col]
-            pointers.append("Ix")
+            pointers.append(["Ix", row-1, col])
             ix_matrix_pointers[row, col] = pointers
 
         self.ix_matrix_pointers = ix_matrix_pointers
