@@ -17,6 +17,43 @@ import numpy as np
 
 
 #### ------ USEFUL FUNCTIONS ------- ####
+
+def print_pointer_matrix(pointer_matrix, name="Pointer Matrix"):
+    """
+    Print a pointer matrix as a pandas DataFrame.
+
+    Args:
+        pointer_matrix: numpy array containing pointer lists
+        name: name of the matrix to display
+    """
+    print(f"\n{name}:")
+    rows, cols = pointer_matrix.shape
+
+    # Create a formatted version for display
+    display_matrix = []
+    for i in range(rows):
+        row_data = []
+        for j in range(cols):
+            cell = pointer_matrix[i, j]
+            if cell is None or (isinstance(cell, list) and len(cell) == 0):
+                row_data.append("{--}")
+            elif isinstance(cell, list):
+                # Format list of pointers - extract just matrix names
+                ptr_str = ",".join([p[0] if isinstance(p, list) else str(p) for p in cell])
+                row_data.append(f"{{{ptr_str}}}")
+            else:
+                row_data.append(f"{{{str(cell)}}}")
+        display_matrix.append(row_data)
+
+    # Create DataFrame
+    df = pd.DataFrame(display_matrix,
+                      columns=[str(j) for j in range(cols)],
+                      index=[str(i) for i in range(rows)])
+
+    print(df)
+    print()
+
+
 def fuzzy_equals(a, b):
     """
     Checks if two floating point numbers are equivalent.
@@ -212,6 +249,7 @@ class Align(object):
         # perform a traceback and write the output to an output file
         print("DEBUG: === Starting traceback ===")
         ### TO-DO! FILL IN ###
+        self.traceback()
 
     def populate_score_matrices(self):
         """
@@ -253,20 +291,19 @@ class Align(object):
         print(self.m_matrix)
 
         print("\nfinal version of m_matrix_pointers:")
-        print(self.m_matrix_pointers)
+        print_pointer_matrix(self.m_matrix_pointers)
 
         print("\nfinal version of ix_matrix:")
         print(self.ix_matrix)
 
         print("\nfinal version of ix_matrix_pointers:")
-        print(self.ix_matrix_pointers)
+        print_pointer_matrix(self.ix_matrix_pointers)
 
         print("\nfinal version of iy_matrix:")
         print(self.iy_matrix)
 
         print("\nfinal version of iy_matrix_pointers:")
-        print(self.iy_matrix_pointers)
-
+        print_pointer_matrix(self.iy_matrix_pointers)
 
     def update(self, row, col):
         """
@@ -489,8 +526,6 @@ class Align(object):
         print("updated iy_matrix:")
         print(iy_matrix)
 
-
-
         iy_matrix_pointers = self.iy_matrix_pointers
 
         if type(iy_matrix_pointers[row, col]) != list:
@@ -515,8 +550,6 @@ class Align(object):
         self.iy_matrix_pointers = iy_matrix_pointers
         print(f"DEBUG:   Iy[{row},{col}] = {final_max_score:.2f}, pointers: {iy_matrix_pointers[row, col]}")
 
-
-
     def find_traceback_start(self):
         """
         Finds the location to start the traceback..
@@ -529,6 +562,99 @@ class Align(object):
         """
         print("DEBUG: Finding traceback start...")
         ### TO-DO! FILL IN ###
+        if self.align_params.global_alignment is True:
+            max_m_matrix = max(self.m_matrix[self.align_params.len_seq_a:].max(), self.m_matrix[:self.align_params.len_seq_b].max())
+            print(f"max_m_matrix: {max_m_matrix}")
+            max_ix_matrix = max(self.ix_matrix[self.align_params.len_seq_a:].max(), self.ix_matrix[:self.align_params.len_seq_b].max())
+            print(f"max_ix_matrix: {max_ix_matrix}")
+            max_iy_matrix = max(self.iy_matrix[self.align_params.len_seq_a:].max(), self.iy_matrix[:self.align_params.len_seq_b].max())
+            print(f"max_iy_matrix: {max_iy_matrix}")
+
+            max_of_maxes = max(max_m_matrix, max_ix_matrix, max_iy_matrix)
+            print(f"max_of_maxes: {max_of_maxes}")
+
+            return max_of_maxes, (self.align_params.len_seq_a, self.align_params.len_seq_b)
+
+    def traceback_cell(self, matrix, row, col, input_alignments=None):
+        if input_alignments is None:
+            input_alignments = []
+
+        print(f"\ninside traceback cell:")
+        print(f"curr cell matrix: {matrix}")
+        print(f"curr cell row: {row}")
+        print(f"curr cell col: {col}")
+        print(f"Input alignments: {input_alignments}")
+
+        if matrix == "M":
+            curr_cell_pointers_matrix = self.m_matrix_pointers
+        elif matrix == "Ix":
+            curr_cell_pointers_matrix = self.ix_matrix_pointers
+        elif matrix == "Iy":
+            curr_cell_pointers_matrix = self.iy_matrix_pointers
+        else:
+            print("INVALID MATRIX")
+            return
+        print(f"curr_cell_pointers_matrix:")
+        print_pointer_matrix(curr_cell_pointers_matrix)
+
+        # if there are no pointers from this cell, return input_alignments as is
+        pointers_from_curr_cell = curr_cell_pointers_matrix[row, col]
+        print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
+        if pointers_from_curr_cell is None:
+            print("pointers from curr cell is None. Returning input_alignments as is")
+            return input_alignments
+
+        num_pointers_from_curr_cell = len(pointers_from_curr_cell)
+        if num_pointers_from_curr_cell == 0:
+            print("pointers from curr cell is empty. Returning input_alignments as is")
+            return input_alignments
+
+        for pointer in pointers_from_curr_cell:
+            print(f"pointer:{pointer}")
+            next_matrix_letter = pointer[0]
+            print(f"next_matrix_letter: {next_matrix_letter}")
+            next_matrix_row = pointer[1]
+            print(f"next_matrix_row: {next_matrix_row}")
+            next_matrix_column = pointer[2]
+            print(f"next_matrix_column: {next_matrix_column}")
+
+            seq_a = self.align_params.seq_a
+            print(f"seq_a: {seq_a}")
+            seq_b = self.align_params.seq_b
+            print(f"seq_b: {seq_b}")
+
+            if next_matrix_letter == "M":
+                print("curr alignments have to be extended by both residues")
+                residue_a = seq_a[row-1]
+                residue_b = seq_b[col-1]
+
+            elif next_matrix_letter == "Ix":
+                print("Gap in B")
+                residue_a = seq_a[row-1]
+                residue_b = "_"
+            elif next_matrix_letter == "Iy":
+                print("Gap in A")
+                residue_a = "-"
+                residue_b = seq_b[col-1]
+            else:
+                print("INVALID MATRIX LETTER IN POINTER")
+                return
+
+            output_alignments = list()
+            if len(input_alignments) == 0:
+                output_alignments.append([[residue_a], [residue_b]])
+            else:
+                for alignment in input_alignments:
+                    alignment_a: list = alignment[0]
+                    alignment_b: list = alignment[1]
+
+                    alignment_a.append(residue_a)
+                    alignment_b.append(residue_b)
+
+                    output_alignments.append([alignment_a, alignment_b])
+
+            return self.traceback_cell(next_matrix_letter, next_matrix_row, next_matrix_column, output_alignments)
+
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
         """
@@ -538,9 +664,14 @@ class Align(object):
 
 
         """
-        print("DEBUG: Performing traceback...")
+        print("<<<<<BEGIN TRACEBACK>>>>>")
         ### TO-DO! FILL IN ###
-        pass
+        max_val, max_location = self.find_traceback_start()
+        recursive_trace_return = self.traceback_cell("M", max_location[0], max_location[1])
+        for alignment in recursive_trace_return:
+            print("alignment:")
+            print(alignment[0])
+            print(alignment[1])
 
 
 def write_output(self):
@@ -630,7 +761,6 @@ def main():
     # create an align object and run
     align = Align(input_file, output_file)
     align.align()
-
 
 if __name__=="__main__":
     main()
