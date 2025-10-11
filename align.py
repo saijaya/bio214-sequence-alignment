@@ -363,7 +363,7 @@ class Align(object):
         print(f"DEBUG: -> residues: Xi (seq_a[{row-2}]) = '{self.align_params.seq_a[row-2]}', Yj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
         seq_a = self.align_params.seq_a
-        curr_residue_a = seq_a[row-1]
+        curr_residue_a = seq_a[row-2]
         print("Curr residue seq_a: "+ curr_residue_a)
         seq_b = self.align_params.seq_b
         curr_residue_b = seq_b[col-1]
@@ -431,11 +431,87 @@ class Align(object):
         self.ix_matrix_pointers = ix_matrix_pointers
         print(f"DEBUG:   Ix[{row},{col}] = {final_max_score:.2f}, pointers: {ix_matrix_pointers[row, col]}")
 
-
     def update_iy(self, row, col):
         ### TO-DO! FILL IN ###
-        print(f"DEBUG:   [Iy] Updating Iy[{row},{col}]")
-        pass
+        print(f"DEBUG:   update_iy() Iy[{row},{col}]")
+        print("GAP IN A")
+        print(
+            f"DEBUG:   subsequences: -> seq A [0:{row}] = '{self.align_params.seq_a[0:row]}', seq B [0:{col-1}] = '{self.align_params.seq_b[0:col-1]}'")
+        print(
+            f"DEBUG: -> residues: Xi (seq_a[{row - 1}]) = '{self.align_params.seq_a[row - 1]}', Yj (seq_b[{col - 2}]) = '{self.align_params.seq_b[col - 2]}'")
+
+        seq_a = self.align_params.seq_a
+        curr_residue_a = seq_a[row - 1]
+        print("Curr residue seq_a: " + curr_residue_a)
+        seq_b = self.align_params.seq_b
+        curr_residue_b = seq_b[col - 2]
+        print("Curr residue seq_b: " + curr_residue_b)
+
+        s_matrix = self.s_matrix
+        print("DEBUG: s_matrix:")
+        print("DEBUG:", type(s_matrix))
+        print("DEBUG:", s_matrix)
+
+        m_matrix = self.m_matrix
+        print("DEBUG: m_matrix:")
+        print("DEBUG:", type(m_matrix))
+        print("DEBUG:", m_matrix)
+
+        iy_matrix = self.iy_matrix
+        print("DEBUG: iy_matrix:")
+        print("DEBUG:", type(iy_matrix))
+        print("DEBUG:", iy_matrix)
+
+        dx = self.align_params.dx
+        print(f"dx = {dx}")
+        ex = self.align_params.ex
+        print(f"ex = {ex}")
+
+        score_from_m_matrix = m_matrix[row, col-1] - dx
+        print(f"score_from_m_matrix: {score_from_m_matrix}")
+        score_from_iy_matrix = iy_matrix[row, col-1] -ex
+        print(f"score_from_iy_matrix: {score_from_iy_matrix}")
+
+        max_score = max(score_from_m_matrix, score_from_iy_matrix)
+        print(f"DEBUG:   max_score chosen: {max_score:.2f}")
+
+        global_alignment: bool = self.align_params.global_alignment
+        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
+        print(f"global_alignment: ", global_alignment)
+        print(f"final_max_score: ", final_max_score)
+
+        iy_matrix[row, col] = final_max_score
+        self.iy_matrix = iy_matrix
+        print("updated iy_matrix:")
+        print(iy_matrix)
+
+
+
+        iy_matrix_pointers = self.iy_matrix_pointers
+
+        if type(iy_matrix_pointers[row, col]) != list:
+            iy_matrix_pointers[row, col] = list()
+
+        if global_alignment is False:
+            print("global alignment is False")
+            if fuzzy_equals(0.0, final_max_score) is True:
+                print("final_max_score is also 0. return update_ix()")
+                return
+
+        if fuzzy_equals(score_from_m_matrix, max_score):
+            pointers = iy_matrix_pointers[row, col]
+            pointers.append(["M", row, col-1])
+            iy_matrix_pointers[row, col] = pointers
+
+        if fuzzy_equals(score_from_iy_matrix, max_score):
+            pointers = iy_matrix_pointers[row, col]
+            pointers.append(["Iy", row, col-1])
+            iy_matrix_pointers[row, col] = pointers
+
+        self.iy_matrix_pointers = iy_matrix_pointers
+        print(f"DEBUG:   Iy[{row},{col}] = {final_max_score:.2f}, pointers: {iy_matrix_pointers[row, col]}")
+
+
 
     def find_traceback_start(self):
         """
