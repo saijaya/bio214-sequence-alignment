@@ -245,6 +245,10 @@ class Align(object):
         # Start with (1,1)
         self.update(row=1, col=1)
 
+        for i in range(1, self.align_params.len_seq_a+1):
+            for j in range(1, self.align_params.len_seq_b+1):
+                self.update(row=i, col=j)
+
         print("\nfinal version of m_matrix:")
         print(self.m_matrix)
 
