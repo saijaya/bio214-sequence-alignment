@@ -20,7 +20,7 @@ flowchart TD
     K0 --> K1{Global or Local?}
     K1 -->|Local| K2["M[i,j] = max(0, max_score)"]
     K1 -->|Global| K3["M[i,j] = max_score"]
-    K2 --> K4[Track pointers: M, Ix, or Iy based on which equals max_score]
+    K2 --> K4["Store pointers: [matrix_name, i-1, j-1]<br/>e.g. [M, i-1, j-1] or [Ix, i-1, j-1]"]
     K3 --> K4
     
     K4 --> L[update_ix: Ix i j gap in seq B]
@@ -28,7 +28,7 @@ flowchart TD
     L0 --> L1{Global or Local?}
     L1 -->|Local| L2["Ix[i,j] = max(0, max_score)"]
     L1 -->|Global| L3["Ix[i,j] = max_score"]
-    L2 --> L4[Track pointers: M or Ix based on which equals max_score]
+    L2 --> L4["Store pointers: [matrix_name, i-1, j]<br/>e.g. [M, i-1, j] or [Ix, i-1, j]"]
     L3 --> L4
     
     L4 --> M[update_iy: Iy i j gap in seq A]
@@ -36,7 +36,7 @@ flowchart TD
     M0 --> M1{Global or Local?}
     M1 -->|Local| M2["Iy[i,j] = max(0, max_score)"]
     M1 -->|Global| M3["Iy[i,j] = max_score"]
-    M2 --> M4[Track pointers: M or Iy based on which equals max_score]
+    M2 --> M4["Store pointers: [matrix_name, i, j-1]<br/>e.g. [M, i, j-1] or [Iy, i, j-1]"]
     M3 --> M4
   end
 
