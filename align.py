@@ -150,8 +150,8 @@ class AlignmentParameters(object):
 
         input_params_dict = read_input_file(input_file)
         print_input_params(input_params_dict)
-        self.seq_a = str(input_params_dict["seq_a"])
-        self.seq_b = str(input_params_dict["seq_b"])
+        self.seq_a = str(input_params_dict["seq_a"]).strip()
+        self.seq_b = str(input_params_dict["seq_b"]).strip()
         self.global_alignment = bool(input_params_dict["global_alignment"])
         self.dx = float(input_params_dict["dx"])
         self.ex = float(input_params_dict["ex"])
@@ -161,6 +161,11 @@ class AlignmentParameters(object):
         self.alphabet_b = str(input_params_dict["alphabet_b"])
         self.len_alphabet_a = int(input_params_dict["len_alphabet_a"])
         self.len_alphabet_b = int(input_params_dict["len_alphabet_b"])
+
+        # Adding length of sequence inferred:
+        self.len_seq_a = len(self.seq_a)
+        self.len_seq_b = len(self.seq_b)
+
         self.match_matrix = input_params_dict["match_matrix"]
         print("hahahaha")
         print(type(self.match_matrix))
@@ -192,15 +197,19 @@ class Align(object):
         """
         Main method for running alignment.
         """
+        print("DEBUG: === Starting alignment ===")
 
         # load the alignment parameters into the align_params object
         self.align_params.load_params_from_file(self.input_file)
+        print(f"DEBUG: Seq A: {self.align_params.seq_a}, Seq B: {self.align_params.seq_b}")
+        print(f"DEBUG: Mode: {'Global' if self.align_params.global_alignment else 'Local'}")
 
         # populate the score matrices based on the input parameters
+        print("DEBUG: === Populating score matrices ===")
         self.populate_score_matrices()
 
         # perform a traceback and write the output to an output file
-
+        print("DEBUG: === Starting traceback ===")
         ### TO-DO! FILL IN ###
 
     def populate_score_matrices(self):
@@ -211,8 +220,9 @@ class Align(object):
         """
 
         ### TO-DO! FILL IN ###
-        num_rows_in_score_matrices = self.align_params.len_alphabet_a+1
-        num_columns_in_score_matrices = self.align_params.len_alphabet_b + 1
+        num_rows_in_score_matrices = self.align_params.len_seq_a+1
+        num_columns_in_score_matrices = self.align_params.len_seq_b + 1
+        print(f"DEBUG: Matrix size: {num_rows_in_score_matrices}x{num_columns_in_score_matrices}")
 
         self.M_score_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
         self.M_score_matrix[0, :] = 0.0
@@ -245,30 +255,40 @@ class Align(object):
            row = the row index to update
            col = the column index to update
         """
+        print(f"DEBUG: -> Updating ({row},{col})")
         self.update_m(row, col)
         self.update_ix(row, col)
         self.update_iy(row, col)
 
     def update_m(self, row, col):
         ### TO-DO! FILL IN ###
+        print(f"DEBUG:   [M] Evaluating M[{row},{col}]")
 
         match_matrix = pd.DataFrame(self.align_params.match_matrix)
+        print("DEBUG: match_matrix:")
+        print("DEBUG:", type(match_matrix))
+        print("DEBUG:", match_matrix)
         seq_A = self.align_params.seq_a
         seq_B = self.align_params.seq_b
         score_record = match_matrix[match_matrix["seq_A_residue"] == seq_A[row]]
         score_record = score_record[match_matrix["seq_B_residue"] == seq_B[col]]
         print("\n")
         s_ij_match = float(list(score_record["score"])[0])
+        print(f"DEBUG:   Match score: {s_ij_match}")
         print(s_ij_match)
 
         M_score_matrix = self.M_score_matrix
         M_score_direction_matrix = self.M_score_direction_matrix
 
         score_from_M = self.M_score_matrix[row-1, col-1] + s_ij_match
+        print(f"DEBUG:   Score from M[{row-1},{col-1}]: {self.M_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_M:.2f}")
         score_from_Ix = self.Ix_score_matrix[row-1, col-1] + s_ij_match
+        print(f"DEBUG:   Score from Ix[{row-1},{col-1}]: {self.Ix_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_Ix:.2f}")
         score_from_Iy = self.Iy_score_matrix[row-1, col-1] + s_ij_match
+        print(f"DEBUG:   Score from Iy[{row-1},{col-1}]: {self.Iy_score_matrix[row-1, col-1]:.2f} + {s_ij_match} = {score_from_Iy:.2f}")
 
         max_score = max(score_from_M, score_from_Ix, score_from_Iy)
+        print(f"DEBUG:   Max score chosen: {max_score:.2f}")
         M_score_matrix[row, col] = max_score
         self.M_score_matrix = M_score_matrix
 
@@ -291,14 +311,17 @@ class Align(object):
             M_score_direction_matrix[row, col] = pointers
 
         self.M_score_direction_matrix = M_score_direction_matrix
+        print(f"DEBUG:   M[{row},{col}] = {max_score:.2f}, pointers: {M_score_direction_matrix[row, col]}")
 
 
     def update_ix(self, row, col):
         ### TO-DO! FILL IN ###
+        print(f"DEBUG:   [Ix] Updating Ix[{row},{col}]")
         pass
 
     def update_iy(self, row, col):
         ### TO-DO! FILL IN ###
+        print(f"DEBUG:   [Iy] Updating Iy[{row},{col}]")
         pass
 
     def find_traceback_start(self):
@@ -311,6 +334,7 @@ class Align(object):
             max_loc is a set() containing tuples with the (i,j) location(s) to start the traceback
              (ex. [(1,2), (3,4)])
         """
+        print("DEBUG: Finding traceback start...")
         ### TO-DO! FILL IN ###
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
@@ -321,6 +345,7 @@ class Align(object):
 
 
         """
+        print("DEBUG: Performing traceback...")
         ### TO-DO! FILL IN ###
         pass
 
