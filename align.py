@@ -276,53 +276,66 @@ class Align(object):
         print("DEBUG: s_matrix:")
         print("DEBUG:", type(s_matrix))
         print("DEBUG:", s_matrix)
-        seq_A = self.align_params.seq_a
-        curr_residue_a = seq_A[row-1]
+        seq_a = self.align_params.seq_a
+        curr_residue_a = seq_a[row-1]
         print("Curr residue seq_a: "+ curr_residue_a)
-        seq_B = self.align_params.seq_b
-        curr_residue_b = seq_B[col-1]
+        seq_b = self.align_params.seq_b
+        curr_residue_b = seq_b[col-1]
         print("Curr residue seq_b: "+ curr_residue_b)
 
-        score_record = s_matrix[s_matrix["seq_A_residue"] == curr_residue_a]
-        score_record = score_record[s_matrix["seq_B_residue"] == curr_residue_b]
-        s_ij_match = float(list(score_record["score"])[0])
+        s_matrix_slice = s_matrix[s_matrix["seq_A_residue"] == curr_residue_a]
+        s_matrix_slice = s_matrix_slice[s_matrix["seq_B_residue"] == curr_residue_b]
+        s_ij_match = float(list(s_matrix_slice["score"])[0])
         print(f"residue match score (from lookup match_matrix: {s_ij_match}")
 
-        M_score_matrix = self.m_matrix
-        M_score_direction_matrix = self.m_matrix_pointers
+        m_matrix = self.m_matrix
 
-        score_from_M = self.m_matrix[row - 1, col - 1] + s_ij_match
-        print(f"DEBUG:   Score from M[{row-1},{col-1}]: {self.m_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_M:.2f}")
-        score_from_Ix = self.ix_matrix[row - 1, col - 1] + s_ij_match
-        print(f"DEBUG:   Score from Ix[{row-1},{col-1}]: {self.ix_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_Ix:.2f}")
-        score_from_Iy = self.iy_matrix[row - 1, col - 1] + s_ij_match
-        print(f"DEBUG:   Score from Iy[{row-1},{col-1}]: {self.iy_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_Iy:.2f}")
+        score_from_m_matrix = self.m_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from M[{row-1},{col-1}]: {self.m_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_m_matrix:.2f}")
+        score_from_ix_matrix = self.ix_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from Ix[{row-1},{col-1}]: {self.ix_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_ix_matrix:.2f}")
+        score_from_iy_matrix = self.iy_matrix[row - 1, col - 1] + s_ij_match
+        print(f"DEBUG:   Score from Iy[{row-1},{col-1}]: {self.iy_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_iy_matrix:.2f}")
 
-        max_score = max(score_from_M, score_from_Ix, score_from_Iy)
-        print(f"DEBUG:   Max score chosen: {max_score:.2f}")
-        M_score_matrix[row, col] = max_score
-        self.m_matrix = M_score_matrix
+        max_score = max(score_from_m_matrix, score_from_ix_matrix, score_from_iy_matrix)
+        print(f"DEBUG:   max_score chosen: {max_score:.2f}")
 
-        if type(M_score_direction_matrix[row, col]) != list:
-            M_score_direction_matrix[row, col] = list()
+        global_alignment: bool = self.align_params.global_alignment
+        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
+        m_matrix[row, col] = final_max_score
 
-        if fuzzy_equals(score_from_M, max_score):
-            pointers = M_score_direction_matrix[row, col]
+        self.m_matrix = m_matrix
+        print("udpated m_matrix:")
+        print(m_matrix)
+
+        m_matrix_pointers = self.m_matrix_pointers
+
+        if type(m_matrix_pointers[row, col]) != list:
+            m_matrix_pointers[row, col] = list()
+
+        if global_alignment is False:
+            print("global alignment is False")
+            if fuzzy_equals(0.0, final_max_score) is True:
+                print("final_max_score is also 0. return update_m()")
+                return
+
+        if fuzzy_equals(score_from_m_matrix, max_score):
+            pointers = m_matrix_pointers[row, col]
             pointers.append("M")
-            M_score_direction_matrix[row, col] = pointers
+            m_matrix_pointers[row, col] = pointers
 
-        if fuzzy_equals(score_from_Ix, max_score):
-            pointers = M_score_direction_matrix[row, col]
+        if fuzzy_equals(score_from_ix_matrix, max_score):
+            pointers = m_matrix_pointers[row, col]
             pointers.append("Ix")
-            M_score_direction_matrix[row, col] = pointers
+            m_matrix_pointers[row, col] = pointers
 
-        if fuzzy_equals(score_from_Iy, max_score):
-            pointers = M_score_direction_matrix[row, col]
+        if fuzzy_equals(score_from_iy_matrix, max_score):
+            pointers = m_matrix_pointers[row, col]
             pointers.append("Iy")
-            M_score_direction_matrix[row, col] = pointers
+            m_matrix_pointers[row, col] = pointers
 
-        self.m_matrix_pointers = M_score_direction_matrix
-        print(f"DEBUG:   M[{row},{col}] = {max_score:.2f}, pointers: {M_score_direction_matrix[row, col]}")
+        self.m_matrix_pointers = m_matrix_pointers
+        print(f"DEBUG:   M[{row},{col}] = {max_score:.2f}, pointers: {m_matrix_pointers[row, col]}")
 
 
     def update_ix(self, row, col):
