@@ -42,8 +42,24 @@ flowchart TD
 
   M4 --> Q{More cells to process?}
   Q -->|Yes| J
-  Q -->|No| R[find_traceback_start: Find optimal start positions]
+  Q -->|No| R[find_traceback_start]
   
-  R --> S[traceback: Enumerate all optimal paths using pointer matrices]
-  S --> T[write_output: Output best score and alignments]
+  subgraph Traceback [Traceback: Find Optimal Alignments]
+    direction TB
+    R --> R1["Global: Find max in last row/col<br/>Return (max_score, (len_seq_a, len_seq_b))"]
+    R1 --> S[traceback_cell: Recursive enumeration]
+    S --> S1["Get pointers from current matrix[row,col]<br/>For each pointer: [matrix_name, next_row, next_col]"]
+    S1 --> S2{Which matrix?}
+    S2 -->|M| S3["Add residues: seq_a[row-1], seq_b[col-1]<br/>Recurse to M/Ix/Iy[row-1, col-1]"]
+    S2 -->|Ix| S4["Add gap in B: seq_a[row-1], '_'<br/>Recurse to M/Ix[row-1, col]"]
+    S2 -->|Iy| S5["Add gap in A: '-', seq_b[col-1]<br/>Recurse to M/Iy[row, col-1]"]
+    S3 --> S6[Append residues to all alignments]
+    S4 --> S6
+    S5 --> S6
+    S6 --> S7{More pointers?}
+    S7 -->|Yes| S1
+    S7 -->|No| S8[Return all enumerated alignments]
+  end
+  
+  S8 --> T[write_output: Output best score and alignments]
   T --> U[End]
