@@ -392,36 +392,38 @@ class Align(object):
 
         print(f"<<<<<<<<<<m_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
 
-        m_matrix_pointers = self.m_matrix_pointers
-        if type(m_matrix_pointers[row, col]) != list:
-            m_matrix_pointers[row, col] = list()
-
-        if fuzzy_equals(score_from_m_matrix, max_score):
-            pointers = m_matrix_pointers[row, col]
-            pointers.append(["M", row-1, col-1])
-            m_matrix_pointers[row, col] = pointers
-
-        if fuzzy_equals(score_from_ix_matrix, max_score):
-            pointers = m_matrix_pointers[row, col]
-            pointers.append(["Ix", row-1, col-1])
-            m_matrix_pointers[row, col] = pointers
-
-        if fuzzy_equals(score_from_iy_matrix, max_score):
-            pointers = m_matrix_pointers[row, col]
-            pointers.append(["Iy", row-1, col-1])
-            m_matrix_pointers[row, col] = pointers
-        self.m_matrix_pointers = m_matrix_pointers
-
-        print(f"final score in m_matrix cell: M[{row},{col}] = {self.m_matrix[row, col]:.2f}")
-        print(f"final pointers in m_matrix_pointers cell: M[{row},{col}] = pointers: {self.m_matrix_pointers[row, col]}")
-
-        """
+        # If local alignment and final_score is 0.0, no pointers
         if global_alignment is False:
             print("global alignment is False")
             if fuzzy_equals(0.0, final_max_score) is True:
-                print("final_max_score is also 0. return update_m()")
-                return
-        """
+                print("local alginment. cell score 0.0. no pointers from cell")
+        else:
+            m_matrix_pointers = self.m_matrix_pointers
+            if type(m_matrix_pointers[row, col]) != list:
+                m_matrix_pointers[row, col] = list()
+
+            if fuzzy_equals(score_from_m_matrix, max_score):
+                print(f"adding [M, {row-1}, {col-1}]")
+                pointers = m_matrix_pointers[row, col]
+                pointers.append(["M", row-1, col-1])
+                m_matrix_pointers[row, col] = pointers
+
+            if fuzzy_equals(score_from_ix_matrix, max_score):
+                print(f"adding [Ix, {row-1}, {col-1}]")
+                pointers = m_matrix_pointers[row, col]
+                pointers.append(["Ix", row-1, col-1])
+                m_matrix_pointers[row, col] = pointers
+
+            if fuzzy_equals(score_from_iy_matrix, max_score):
+                print(f"adding [Iy, {row-1}, {col-1}]")
+                pointers = m_matrix_pointers[row, col]
+                pointers.append(["Iy", row-1, col-1])
+                m_matrix_pointers[row, col] = pointers
+
+            self.m_matrix_pointers = m_matrix_pointers
+
+        print(f"final score in m_matrix cell: M[{row},{col}] = {self.m_matrix[row, col]:.2f}")
+        print(f"final pointers in m_matrix_pointers cell: M[{row},{col}] = pointers: {self.m_matrix_pointers[row, col]}")
         print(f"<<<<<<<<<<m_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
 
@@ -474,33 +476,32 @@ class Align(object):
         print(ix_matrix)
 
         print(f"<<<<<<<<<<ix_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
-
-        ix_matrix_pointers = self.ix_matrix_pointers
-
-        if type(ix_matrix_pointers[row, col]) != list:
-            ix_matrix_pointers[row, col] = list()
-
-        if fuzzy_equals(score_from_m_matrix, max_score):
-            pointers = ix_matrix_pointers[row, col]
-            pointers.append(["M", row-1, col])
-            ix_matrix_pointers[row, col] = pointers
-
-        if fuzzy_equals(score_from_ix_matrix, max_score):
-            pointers = ix_matrix_pointers[row, col]
-            pointers.append(["Ix", row-1, col])
-            ix_matrix_pointers[row, col] = pointers
-        self.ix_matrix_pointers = ix_matrix_pointers
-        print(f"DEBUG:   Ix[{row},{col}] = {final_max_score:.2f}, pointers: {ix_matrix_pointers[row, col]}")
-        print(f"final score in ix_matrix cell: Ix[{row},{col}] = {self.ix_matrix[row, col]:.2f}")
-        print(f"final pointers in ix_matrix_pointers cell: Ix[{row},{col}] = pointers: {self.ix_matrix_pointers[row, col]}")
-
-        """
+        # If local alignment and final_score is 0.0, no pointers
         if global_alignment is False:
             print("global alignment is False")
             if fuzzy_equals(0.0, final_max_score) is True:
-                print("final_max_score is also 0. return update_ix()")
-                return
-        """
+                print("local alginment. cell score 0.0. no pointers from cell")
+        else:
+            ix_matrix_pointers = self.ix_matrix_pointers
+
+            if type(ix_matrix_pointers[row, col]) != list:
+                ix_matrix_pointers[row, col] = list()
+
+            if fuzzy_equals(score_from_m_matrix, max_score):
+                print(f"adding [M, {row-1}, {col}]")
+                pointers = ix_matrix_pointers[row, col]
+                pointers.append(["M", row-1, col])
+                ix_matrix_pointers[row, col] = pointers
+
+            if fuzzy_equals(score_from_ix_matrix, max_score):
+                print(f"adding [Ix, {row-1}, {col}]")
+                pointers = ix_matrix_pointers[row, col]
+                pointers.append(["Ix", row-1, col])
+                ix_matrix_pointers[row, col] = pointers
+
+            self.ix_matrix_pointers = ix_matrix_pointers
+        print(f"final score in ix_matrix cell: Ix[{row},{col}] = {self.ix_matrix[row, col]:.2f}")
+        print(f"final pointers in ix_matrix_pointers cell: Ix[{row},{col}] = pointers: {self.ix_matrix_pointers[row, col]}")
         print(f"<<<<<<<<<<ix_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
     def update_iy(self, row, col):
@@ -551,24 +552,30 @@ class Align(object):
         print(iy_matrix)
 
         print(f"<<<<<<<<<<iy_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
+        # If local alignment and final_score is 0.0, no pointers
+        if global_alignment is False:
+            print("global alignment is False")
+            if fuzzy_equals(0.0, final_max_score) is True:
+                print("local alginment. cell score 0.0. no pointers from cell")
+        else:
+            iy_matrix_pointers = self.iy_matrix_pointers
 
-        iy_matrix_pointers = self.iy_matrix_pointers
+            if type(iy_matrix_pointers[row, col]) != list:
+                iy_matrix_pointers[row, col] = list()
 
-        if type(iy_matrix_pointers[row, col]) != list:
-            iy_matrix_pointers[row, col] = list()
+            if fuzzy_equals(score_from_m_matrix, max_score):
+                print(f"adding [M, {row}, {col-1}]")
+                pointers = iy_matrix_pointers[row, col]
+                pointers.append(["M", row, col-1])
+                iy_matrix_pointers[row, col] = pointers
 
-        if fuzzy_equals(score_from_m_matrix, max_score):
-            pointers = iy_matrix_pointers[row, col]
-            pointers.append(["M", row, col-1])
-            iy_matrix_pointers[row, col] = pointers
+            if fuzzy_equals(score_from_iy_matrix, max_score):
+                print(f"adding [Iy, {row}, {col-1}]")
+                pointers = iy_matrix_pointers[row, col]
+                pointers.append(["Iy", row, col-1])
+                iy_matrix_pointers[row, col] = pointers
 
-        if fuzzy_equals(score_from_iy_matrix, max_score):
-            pointers = iy_matrix_pointers[row, col]
-            pointers.append(["Iy", row, col-1])
-            iy_matrix_pointers[row, col] = pointers
-
-        self.iy_matrix_pointers = iy_matrix_pointers
-        print(f"DEBUG:   Iy[{row},{col}] = {final_max_score:.2f}, pointers: {iy_matrix_pointers[row, col]}")
+            self.iy_matrix_pointers = iy_matrix_pointers
         print(f"final score in iy_matrix cell: Iy[{row},{col}] = {self.iy_matrix[row, col]:.2f}")
         print(f"final pointers in iy_matrix_pointers cell: Iy[{row},{col}] = pointers: {self.iy_matrix_pointers[row, col]}")
 
@@ -580,7 +587,6 @@ class Align(object):
                 return
         """
         print(f"<<<<<<<<<<iy_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
-
 
     def find_traceback_start(self):
         """
