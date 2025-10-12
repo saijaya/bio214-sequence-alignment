@@ -563,15 +563,17 @@ class Align(object):
         print("DEBUG: Finding traceback start...")
         ### TO-DO! FILL IN ###
         if self.align_params.global_alignment is True:
+            print("DEBUG: Global alignment - looking for max in last row/column")
             max_m_matrix = max(self.m_matrix[self.align_params.len_seq_a:].max(), self.m_matrix[:self.align_params.len_seq_b].max())
-            print(f"max_m_matrix: {max_m_matrix}")
+            print(f"DEBUG:   Max from M matrix edges: {max_m_matrix}")
             max_ix_matrix = max(self.ix_matrix[self.align_params.len_seq_a:].max(), self.ix_matrix[:self.align_params.len_seq_b].max())
-            print(f"max_ix_matrix: {max_ix_matrix}")
+            print(f"DEBUG:   Max from Ix matrix edges: {max_ix_matrix}")
             max_iy_matrix = max(self.iy_matrix[self.align_params.len_seq_a:].max(), self.iy_matrix[:self.align_params.len_seq_b].max())
-            print(f"max_iy_matrix: {max_iy_matrix}")
+            print(f"DEBUG:   Max from Iy matrix edges: {max_iy_matrix}")
 
             max_of_maxes = max(max_m_matrix, max_ix_matrix, max_iy_matrix)
-            print(f"max_of_maxes: {max_of_maxes}")
+            print(f"DEBUG:   Overall max score: {max_of_maxes}")
+            print(f"DEBUG:   Starting traceback from position: ({self.align_params.len_seq_a}, {self.align_params.len_seq_b})")
 
             return max_of_maxes, (self.align_params.len_seq_a, self.align_params.len_seq_b)
 
@@ -579,11 +581,10 @@ class Align(object):
         if input_alignments is None:
             input_alignments = []
 
-        print(f"\ninside traceback cell:")
-        print(f"curr cell matrix: {matrix}")
-        print(f"curr cell row: {row}")
-        print(f"curr cell col: {col}")
-        print(f"Input alignments: {input_alignments}")
+        print(f"\nDEBUG: === Traceback cell {matrix}[{row},{col}] ===")
+        print(f"DEBUG:   Current matrix: {matrix}")
+        print(f"DEBUG:   Position: ({row}, {col})")
+        print(f"DEBUG:   Input alignments so far: {len(input_alignments)} path(s)")
 
         if matrix == "M":
             curr_cell_pointers_matrix = self.m_matrix_pointers
@@ -592,16 +593,14 @@ class Align(object):
         elif matrix == "Iy":
             curr_cell_pointers_matrix = self.iy_matrix_pointers
         else:
-            print("INVALID MATRIX")
+            print("DEBUG: ERROR - Invalid matrix name!")
             return
-        print(f"curr_cell_pointers_matrix:")
-        print_pointer_matrix(curr_cell_pointers_matrix)
 
         # if there are no pointers from this cell, return input_alignments as is
         pointers_from_curr_cell = curr_cell_pointers_matrix[row, col]
-        print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
+        print(f"DEBUG:   Pointers from this cell: {pointers_from_curr_cell}")
         if pointers_from_curr_cell is None:
-            print("pointers from curr cell is None. Returning input_alignments as is")
+            print("DEBUG:   BASE CASE - No pointers (reached start). Saving alignment.")
             global_alignments = self.global_alignments
             global_alignments.append(input_alignments)
             self.global_alignments = global_alignments
@@ -609,47 +608,46 @@ class Align(object):
 
         num_pointers_from_curr_cell = len(pointers_from_curr_cell)
         if num_pointers_from_curr_cell == 0:
-            print("pointers from curr cell is empty. Returning input_alignments as is")
+            print("DEBUG:   BASE CASE - Empty pointer list. Saving alignment.")
             global_alignments = self.global_alignments
             global_alignments.append(input_alignments)
             self.global_alignments = global_alignments
             return
 
-        for pointer in pointers_from_curr_cell:
-            print(f"pointer:{pointer}")
+        print(f"DEBUG:   Following {num_pointers_from_curr_cell} pointer(s)...")
+        for idx, pointer in enumerate(pointers_from_curr_cell):
+            print(f"\nDEBUG:   Path {idx+1}/{num_pointers_from_curr_cell}: Following pointer {pointer}")
             next_matrix_letter = pointer[0]
-            print(f"next_matrix_letter: {next_matrix_letter}")
             next_matrix_row = pointer[1]
-            print(f"next_matrix_row: {next_matrix_row}")
             next_matrix_column = pointer[2]
-            print(f"next_matrix_column: {next_matrix_column}")
+            print(f"DEBUG:     -> Going to {next_matrix_letter}[{next_matrix_row},{next_matrix_column}]")
 
             seq_a = self.align_params.seq_a
-            print(f"seq_a: {seq_a}")
             seq_b = self.align_params.seq_b
-            print(f"seq_b: {seq_b}")
 
             if next_matrix_letter == "M":
-                print("curr alignments have to be extended by both residues")
+                print(f"DEBUG:     -> Match/mismatch: adding '{seq_a[row-1]}' and '{seq_b[col-1]}'")
                 residue_a = seq_a[row-1]
                 residue_b = seq_b[col-1]
 
             elif next_matrix_letter == "Ix":
-                print("Gap in B")
+                print(f"DEBUG:     -> Gap in B: adding '{seq_a[row-1]}' and '_'")
                 residue_a = seq_a[row-1]
                 residue_b = "_"
             elif next_matrix_letter == "Iy":
-                print("Gap in A")
+                print(f"DEBUG:     -> Gap in A: adding '-' and '{seq_b[col-1]}'")
                 residue_a = "-"
                 residue_b = seq_b[col-1]
             else:
-                print("INVALID MATRIX LETTER IN POINTER")
+                print("DEBUG: ERROR - Invalid matrix letter in pointer!")
                 return
 
             output_alignments = list()
             if len(input_alignments) == 0:
+                print(f"DEBUG:     -> Starting new alignment with [{residue_a}] and [{residue_b}]")
                 output_alignments.append([[residue_a], [residue_b]])
             else:
+                print(f"DEBUG:     -> Extending {len(input_alignments)} existing alignment(s)")
                 for alignment in input_alignments:
                     alignment_a: list = alignment[0]
                     alignment_b: list = alignment[1]
@@ -659,6 +657,7 @@ class Align(object):
 
                     output_alignments.append([alignment_a, alignment_b])
 
+            print(f"DEBUG:     -> Recursing with {len(output_alignments)} alignment(s)")
             self.traceback_cell(next_matrix_letter, next_matrix_row, next_matrix_column, output_alignments)
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
@@ -669,15 +668,21 @@ class Align(object):
 
 
         """
-        print("<<<<<BEGIN TRACEBACK>>>>>")
+        print("\nDEBUG: ========== STARTING TRACEBACK ==========")
         ### TO-DO! FILL IN ###
         max_val, max_location = self.find_traceback_start()
+        print(f"DEBUG: Starting from M[{max_location[0]},{max_location[1]}] with score {max_val}")
+        
         self.global_alignments = list()
         self.traceback_cell("M", max_location[0], max_location[1])
-        for alignment in self.global_alignments:
-            print("alignment:")
-            print(alignment[0])
-            print(alignment[1])
+        
+        print(f"\nDEBUG: ========== TRACEBACK COMPLETE ==========")
+        print(f"DEBUG: Found {len(self.global_alignments)} optimal alignment(s)")
+        
+        for idx, alignment in enumerate(self.global_alignments):
+            print(f"\nDEBUG: Alignment {idx+1}:")
+            print(f"DEBUG:   Seq A: {''.join(alignment[0])}")
+            print(f"DEBUG:   Seq B: {''.join(alignment[1])}")
 
 
 def write_output(self):
