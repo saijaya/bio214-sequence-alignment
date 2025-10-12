@@ -380,8 +380,8 @@ class Align(object):
         print(f"max_score of 3 scores: {max_score:.2f}")
 
         global_alignment: bool = self.align_params.global_alignment
-        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"global_alignment: ", global_alignment)
+        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"final_max_score: ", final_max_score)
 
         m_matrix = self.m_matrix
@@ -395,14 +395,6 @@ class Align(object):
         m_matrix_pointers = self.m_matrix_pointers
         if type(m_matrix_pointers[row, col]) != list:
             m_matrix_pointers[row, col] = list()
-
-        """
-        if global_alignment is False:
-            print("global alignment is False")
-            if fuzzy_equals(0.0, final_max_score) is True:
-                print("final_max_score is also 0. return update_m()")
-                return
-        """
 
         if fuzzy_equals(score_from_m_matrix, max_score):
             pointers = m_matrix_pointers[row, col]
@@ -419,55 +411,59 @@ class Align(object):
             pointers.append(["Iy", row-1, col-1])
             m_matrix_pointers[row, col] = pointers
         self.m_matrix_pointers = m_matrix_pointers
-        
+
         print(f"final score in m_matrix cell: M[{row},{col}] = {self.m_matrix[row, col]:.2f}")
         print(f"final pointers in m_matrix_pointers cell: M[{row},{col}] = pointers: {self.m_matrix_pointers[row, col]}")
 
+        """
+        if global_alignment is False:
+            print("global alignment is False")
+            if fuzzy_equals(0.0, final_max_score) is True:
+                print("final_max_score is also 0. return update_m()")
+                return
+        """
+
     def update_ix(self, row, col):
-        ### TO-DO! FILL IN ###
-        print(f"DEBUG:   update_ix() Ix[{row},{col}]")
+
+        print(f"<<<<<<<<<<<<<inside update_ix({row},{col})>>>>>>>>>>>>>>>>>")
         print("GAP IN B")
-        print(f"DEBUG:   subsequences: -> seq A [0:{row-1}] = '{self.align_params.seq_a[0:row-1]}', seq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
-        print(f"DEBUG: -> residues: Xi (seq_a[{row-2}]) = '{self.align_params.seq_a[row-2]}', Yj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
+        print(f"considering subsequences: \nseq A [0:{row-1}] = '{self.align_params.seq_a[0:row-1]}', \nseq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
+        print(f"considering residues: \nXi (seq_a[{row-2}]) = '{self.align_params.seq_a[row-2]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
         seq_a = self.align_params.seq_a
         curr_residue_a = seq_a[row-2]
-        print("Curr residue seq_a: "+ curr_residue_a)
+        print("current last residue seq_a: " + curr_residue_a)
         seq_b = self.align_params.seq_b
         curr_residue_b = seq_b[col-1]
-        print("Curr residue seq_b: "+ curr_residue_b)
-
-        s_matrix = self.s_matrix
-        print("DEBUG: s_matrix:")
-        print("DEBUG:", type(s_matrix))
-        print("DEBUG:", s_matrix)
-
-        m_matrix = self.m_matrix
-        print("DEBUG: m_matrix:")
-        print("DEBUG:", type(m_matrix))
-        print("DEBUG:", m_matrix)
-
-        ix_matrix = self.ix_matrix
-        print("DEBUG: ix_matrix:")
-        print("DEBUG:", type(ix_matrix))
-        print("DEBUG:", ix_matrix)
+        print("current last residue seq_b: " + curr_residue_b)
 
         dy = self.align_params.dy
         print(f"dy = {dy}")
         ey = self.align_params.ey
         print(f"ey = {ey}")
 
-        score_from_m_matrix = m_matrix[row-1, col] - dy
-        print(f"score_from_m_matrix: {score_from_m_matrix}")
+        print("self.m_matrix:")
+        print(self.m_matrix)
+
+        ix_matrix = self.ix_matrix
+        print("before update ix_matrix:")
+        print(ix_matrix)
+
+        print("in order to update score in current cell, we need max of 2 scores")
+        print("m_matrix:")
+
+        score_from_m_matrix = self.m_matrix[row-1, col] - dy
+        print(f"score from m_matrix: M[{row-1},{col}]: {self.m_matrix[row - 1, col]:.2f} - {dy} = {score_from_m_matrix:.2f}")
+
         score_from_ix_matrix = ix_matrix[row-1, col] -ey
-        print(f"score_from_ix_matrix: {score_from_ix_matrix}")
+        print(f"score from ix_matrix: Ix[{row-1},{col}]: {ix_matrix[row - 1, col]:.2f} - {dy} = {score_from_ix_matrix:.2f}")
 
         max_score = max(score_from_m_matrix, score_from_ix_matrix)
-        print(f"DEBUG:   max_score chosen: {max_score:.2f}")
+        print(f"max_score chosen: {max_score:.2f}")
 
         global_alignment: bool = self.align_params.global_alignment
-        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"global_alignment: ", global_alignment)
+        final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"final_max_score: ", final_max_score)
 
         ix_matrix[row, col] = final_max_score
@@ -475,16 +471,12 @@ class Align(object):
         print("updated ix_matrix:")
         print(ix_matrix)
 
+        print("<<<<<<<<<<ix_matrix cell value updated>>>>>>>>>>>>>>")
+
         ix_matrix_pointers = self.ix_matrix_pointers
 
         if type(ix_matrix_pointers[row, col]) != list:
             ix_matrix_pointers[row, col] = list()
-
-        if global_alignment is False:
-            print("global alignment is False")
-            if fuzzy_equals(0.0, final_max_score) is True:
-                print("final_max_score is also 0. return update_ix()")
-                return
 
         if fuzzy_equals(score_from_m_matrix, max_score):
             pointers = ix_matrix_pointers[row, col]
@@ -495,9 +487,18 @@ class Align(object):
             pointers = ix_matrix_pointers[row, col]
             pointers.append(["Ix", row-1, col])
             ix_matrix_pointers[row, col] = pointers
-
         self.ix_matrix_pointers = ix_matrix_pointers
         print(f"DEBUG:   Ix[{row},{col}] = {final_max_score:.2f}, pointers: {ix_matrix_pointers[row, col]}")
+        print(f"final score in ix_matrix cell: Ix[{row},{col}] = {self.ix_matrix[row, col]:.2f}")
+        print(f"final pointers in ix_matrix_pointers cell: Ix[{row},{col}] = pointers: {self.ix_matrix_pointers[row, col]}")
+
+        """
+        if global_alignment is False:
+            print("global alignment is False")
+            if fuzzy_equals(0.0, final_max_score) is True:
+                print("final_max_score is also 0. return update_ix()")
+                return
+        """
 
     def update_iy(self, row, col):
         ### TO-DO! FILL IN ###
