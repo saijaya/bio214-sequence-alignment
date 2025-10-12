@@ -295,7 +295,7 @@ class Align(object):
         print("~~calling update(1,1)")
         self.update(row=1, col=1)
 
-        """
+
         
         for i in range(1, self.align_params.len_seq_a+1):
             for j in range(1, self.align_params.len_seq_b+1):
@@ -318,7 +318,6 @@ class Align(object):
 
         print("\nfinal version of iy_matrix_pointers:")
         print_pointer_matrix(self.iy_matrix_pointers)
-        """
 
     def update(self, row, col):
         """
@@ -337,6 +336,7 @@ class Align(object):
         self.update_m(row, col)
         self.update_ix(row, col)
         self.update_iy(row, col)
+        print(f"<<<<<<<<<<update complete ({row},{col})>>>>>>>>>>>>>>")
 
     def update_m(self, row, col):
         print(f"<<<<<<<<<<<<<inside update_m({row},{col})>>>>>>>>>>>>>>>>>")
@@ -390,7 +390,7 @@ class Align(object):
         print("udpated m_matrix:")
         print(m_matrix)
 
-        print("<<<<<<<<<<m_matrix cell value updated>>>>>>>>>>>>>>")
+        print(f"<<<<<<<<<<m_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
 
         m_matrix_pointers = self.m_matrix_pointers
         if type(m_matrix_pointers[row, col]) != list:
@@ -422,6 +422,8 @@ class Align(object):
                 print("final_max_score is also 0. return update_m()")
                 return
         """
+        print(f"<<<<<<<<<<m_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
+
 
     def update_ix(self, row, col):
 
@@ -471,7 +473,7 @@ class Align(object):
         print("updated ix_matrix:")
         print(ix_matrix)
 
-        print("<<<<<<<<<<ix_matrix cell value updated>>>>>>>>>>>>>>")
+        print(f"<<<<<<<<<<ix_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
 
         ix_matrix_pointers = self.ix_matrix_pointers
 
@@ -499,6 +501,7 @@ class Align(object):
                 print("final_max_score is also 0. return update_ix()")
                 return
         """
+        print(f"<<<<<<<<<<ix_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
     def update_iy(self, row, col):
         print(f"<<<<<<<<<<<<<inside update_iy({row},{col})>>>>>>>>>>>>>>>>>")
@@ -547,7 +550,7 @@ class Align(object):
         print("updated iy_matrix:")
         print(iy_matrix)
 
-        print("<<<<<<<<<<iy_matrix cell value updated>>>>>>>>>>>>>>")
+        print(f"<<<<<<<<<<iy_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
 
         iy_matrix_pointers = self.iy_matrix_pointers
 
@@ -576,6 +579,8 @@ class Align(object):
                 print("final_max_score is also 0. return update_ix()")
                 return
         """
+        print(f"<<<<<<<<<<iy_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
+
 
     def find_traceback_start(self):
         """
