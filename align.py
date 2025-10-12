@@ -247,7 +247,7 @@ class Align(object):
         self.populate_score_matrices()
 
         # perform a traceback and write the output to an output file
-        print("DEBUG: === Starting traceback ===")
+        print("Calling traceback")
         ### TO-DO! FILL IN ###
         self.traceback()
 
@@ -602,12 +602,18 @@ class Align(object):
         print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
         if pointers_from_curr_cell is None:
             print("pointers from curr cell is None. Returning input_alignments as is")
-            return input_alignments
+            global_alignments = self.global_alignments
+            global_alignments.append(input_alignments)
+            self.global_alignments = global_alignments
+            return
 
         num_pointers_from_curr_cell = len(pointers_from_curr_cell)
         if num_pointers_from_curr_cell == 0:
             print("pointers from curr cell is empty. Returning input_alignments as is")
-            return input_alignments
+            global_alignments = self.global_alignments
+            global_alignments.append(input_alignments)
+            self.global_alignments = global_alignments
+            return
 
         for pointer in pointers_from_curr_cell:
             print(f"pointer:{pointer}")
@@ -653,8 +659,7 @@ class Align(object):
 
                     output_alignments.append([alignment_a, alignment_b])
 
-            return self.traceback_cell(next_matrix_letter, next_matrix_row, next_matrix_column, output_alignments)
-
+            self.traceback_cell(next_matrix_letter, next_matrix_row, next_matrix_column, output_alignments)
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
         """
@@ -667,8 +672,9 @@ class Align(object):
         print("<<<<<BEGIN TRACEBACK>>>>>")
         ### TO-DO! FILL IN ###
         max_val, max_location = self.find_traceback_start()
-        recursive_trace_return = self.traceback_cell("M", max_location[0], max_location[1])
-        for alignment in recursive_trace_return:
+        self.global_alignments = list()
+        self.traceback_cell("M", max_location[0], max_location[1])
+        for alignment in self.global_alignments:
             print("alignment:")
             print(alignment[0])
             print(alignment[1])
