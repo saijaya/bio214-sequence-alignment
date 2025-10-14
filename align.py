@@ -789,12 +789,51 @@ class Align(object):
             self.traceback_cell("M", max_coord_x, max_coord_y)
         
         print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(f"Found {len(self.global_alignments)} optimal alignment(s)")
+        print(f"Found {len(self.global_alignments)} optimal alignment(s) of score {max_val}")
+
+        final_alignments = list()
         
         for idx, alignment in enumerate(self.global_alignments):
-            print(f"\nDEBUG: Alignment {idx+1}:")
-            print(f"DEBUG:   Seq A: {''.join(alignment[0])}")
-            print(f"DEBUG:   Seq B: {''.join(alignment[1])}")
+            print(f"\nAlignment without trimming {idx+1}:")
+            print(f"Seq A: {''.join(reversed(alignment[0]))}")
+            print(f"Seq B: {''.join(reversed(alignment[1]))}")
+
+            print("trimming and reversing sequences")
+            final_seq_a, final_seq_b = trim_reverse_join_alignment(alignment[0], alignment[1])
+
+            print(f"final sequences:")
+            print(final_seq_a)
+            print(final_seq_b)
+
+            final_alignments.append((final_seq_a, final_seq_b))
+
+        final_alignments = list(set(final_alignments))
+
+        print(f"final_score: {max_val}")
+        print(f"final_alignments: {final_alignments}")
+
+
+def trim_reverse_join_alignment(seq_a: list, seq_b: list):
+
+    def trim_sequences(seq_a: list, seq_b: list):
+        while len(seq_a) > 0 and len(seq_b) > 0:
+            if seq_a[0] == "_" or seq_b[0] == "_":
+                seq_a.pop(0)
+                seq_b.pop(0)
+            else:
+                break
+
+        return seq_a, seq_b
+
+    seq_a, seq_b = trim_sequences(seq_a, seq_b)
+    seq_a = list(reversed(seq_a))
+    seq_b = list(reversed(seq_b))
+    seq_a, seq_b = trim_sequences(seq_a, seq_b)
+
+    seq_a = "".join(seq_a)
+    seq_b = "".join(seq_b)
+
+    return seq_a, seq_b
 
 
 def write_output(self):
