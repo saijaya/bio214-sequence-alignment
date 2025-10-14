@@ -14,6 +14,7 @@ Usage: python align.py input_file output_file
 import sys
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 
 #### ------ USEFUL FUNCTIONS ------- ####
@@ -259,7 +260,6 @@ class Align(object):
         num_columns_in_score_matrices = self.align_params.len_seq_b + 1
         print(f"DEBUG: Matrix size: {num_rows_in_score_matrices}x{num_columns_in_score_matrices}")
 
-
         self.m_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
         self.m_matrix[0, :] = 0.0
         self.m_matrix[:, 0] = 0.0
@@ -290,12 +290,9 @@ class Align(object):
         print("\nself.iy_matrix_pointers:")
         print_pointer_matrix(self.iy_matrix_pointers)
 
-
         # Start with (1,1)
-        print("~~calling update(1,1)")
-        self.update(row=1, col=1)
-
-
+        # print("~~calling update(1,1)")
+        # self.update(row=1, col=1)
         
         for i in range(1, self.align_params.len_seq_a+1):
             for j in range(1, self.align_params.len_seq_b+1):
@@ -327,7 +324,9 @@ class Align(object):
            row = the row index to update
            col = the column index to update
         """
-        print(f"<<<<<<<<<<<<<inside update({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"\n\n<<<<<<<<<<<<<inside update({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"seq A: {self.align_params.seq_a}")
+        print(f"seq B: {self.align_params.seq_b}")
         print(f"considering subsequences: \nseq A [0:{row}] = '{self.align_params.seq_a[0:row]}', \nseq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
         print(f"considering residues: \nXi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
@@ -339,7 +338,9 @@ class Align(object):
         print(f"<<<<<<<<<<update complete ({row},{col})>>>>>>>>>>>>>>")
 
     def update_m(self, row, col):
-        print(f"<<<<<<<<<<<<<inside update_m({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"\n<<<<<<<<<<<<<inside update_m({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"seq A: {self.align_params.seq_a}")
+        print(f"seq B: {self.align_params.seq_b}")
         print(f"considering subsequences: \nseq A [0:{row}] = '{self.align_params.seq_a[0:row]}', \nseq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
         print(f"considering residues: \nXi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
@@ -428,8 +429,10 @@ class Align(object):
 
     def update_ix(self, row, col):
 
-        print(f"<<<<<<<<<<<<<inside update_ix({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"\n<<<<<<<<<<<<<inside update_ix({row},{col})>>>>>>>>>>>>>>>>>")
         print("GAP IN B")
+        print(f"seq A: {self.align_params.seq_a}")
+        print(f"seq B: {self.align_params.seq_b}")
         print(f"considering subsequences: \nseq A [0:{row-1}] = '{self.align_params.seq_a[0:row-1]}', \nseq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
         print(f"considering residues: \nXi (seq_a[{row-2}]) = '{self.align_params.seq_a[row-2]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
@@ -459,7 +462,7 @@ class Align(object):
         print(f"score from m_matrix: M[{row-1},{col}]: {self.m_matrix[row - 1, col]:.2f} - {dy} = {score_from_m_matrix:.2f}")
 
         score_from_ix_matrix = ix_matrix[row-1, col] -ey
-        print(f"score from ix_matrix: Ix[{row-1},{col}]: {ix_matrix[row - 1, col]:.2f} - {dy} = {score_from_ix_matrix:.2f}")
+        print(f"score from ix_matrix: Ix[{row-1},{col}]: {ix_matrix[row - 1, col]:.2f} - {ey} = {score_from_ix_matrix:.2f}")
 
         max_score = max(score_from_m_matrix, score_from_ix_matrix)
         print(f"max_score chosen: {max_score:.2f}")
@@ -504,8 +507,10 @@ class Align(object):
         print(f"<<<<<<<<<<ix_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
     def update_iy(self, row, col):
-        print(f"<<<<<<<<<<<<<inside update_iy({row},{col})>>>>>>>>>>>>>>>>>")
+        print(f"\n<<<<<<<<<<<<<inside update_iy({row},{col})>>>>>>>>>>>>>>>>>")
         print("GAP IN A")
+        print(f"seq A: {self.align_params.seq_a}")
+        print(f"seq B: {self.align_params.seq_b}")
         print(f"considering subsequences: \nseq A[0:{row}] = '{self.align_params.seq_a[0:row]}', \nseq B [0:{col-1}] = '{self.align_params.seq_b[0:col-1]}'")
         print(f"considering residues: \nXi (seq_a[{row - 1}]) = '{self.align_params.seq_a[row - 1]}', \nYj (seq_b[{col - 2}]) = '{self.align_params.seq_b[col - 2]}'")
 
@@ -535,7 +540,7 @@ class Align(object):
         print(f"score from m_matrix: M[{row},{col-1}]: {self.m_matrix[row, col-1]:.2f} - {dx} = {score_from_m_matrix:.2f}")
 
         score_from_iy_matrix = iy_matrix[row, col-1] - ex
-        print(f"score from iy_matrix: Iy[{row},{col-1}]: {iy_matrix[row, col-1]:.2f} - {dx} = {score_from_iy_matrix:.2f}")
+        print(f"score from iy_matrix: Iy[{row},{col-1}]: {iy_matrix[row, col-1]:.2f} - {ex} = {score_from_iy_matrix:.2f}")
 
         max_score = max(score_from_m_matrix, score_from_iy_matrix)
         print(f"DEBUG:   max_score chosen: {max_score:.2f}")
@@ -636,24 +641,28 @@ class Align(object):
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
             print(f"Input pointer history: {print_pointer_history}")
             print(f"input_alignments:")
+            print(input_alignments)
+
             for alignment in input_alignments:
-                print("\n")
                 print(alignment[0])
                 print(alignment[1])
+                print("\n")
 
             global_alignments = self.global_alignments
             print(f"global_alignments BEFORE update:")
             for alignment in self.global_alignments:
-                print("\n")
                 print(alignment[0])
                 print(alignment[1])
-            global_alignments.append(input_alignments)
+                print("\n")
+
+            global_alignments.extend(input_alignments)
             self.global_alignments = global_alignments
             print(f"global_alignments AFTER update:")
             for alignment in self.global_alignments:
-                print("\n")
+                print(alignment)
                 print(alignment[0])
                 print(alignment[1])
+                print("\n")
 
         else:
             num_pointers_from_curr_cell = len(pointers_from_curr_cell)
@@ -716,25 +725,33 @@ class Align(object):
 
                 else:
                     # Update all input alignments with latest residue based on pointer
-                    print(f"DEBUG: UPDATING ALIGNMENTS - adding '{residue_to_append_to_seq_a}' and '{residue_to_append_to_seq_b}':")
+                    print(f"DEBUG: UPDATING ALIGNMENTS - adding '{residue_to_append_to_seq_a}' from seq A and '{residue_to_append_to_seq_b}' from seq B:")
                     for input_alignment in input_alignments:
                         print(f"~~Input alignement before update: {input_alignment}")
-                        print(f"DEBUG:   Before update (reversed):")
-                        print(f"DEBUG:     Seq A: {''.join(reversed(input_alignment[0]))}")
-                        print(f"DEBUG:     Seq B: {''.join(reversed(input_alignment[1]))}")
 
                         input_alignment_seq_a: list = input_alignment[0]
+                        print(f"Before update (reversed to show natural order of sequence):")
+                        print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
+
+                        input_alignment_seq_b: list = input_alignment[1]
+                        print(f"Before update (reversed to show natural order of sequence):")
+                        print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
+
+                        print(f"pre-updated input alignment seq A: {input_alignment_seq_a}")
+                        print(f"residue to add to Seq A: {residue_to_append_to_seq_a}")
                         input_alignment_seq_a.append(residue_to_append_to_seq_a)
+                        print(f"updated input alignment seq A: {input_alignment_seq_a}")
 
-                        input_alignment_seq_b = input_alignment[1]
+                        print(f"pre-updated input alignment seq B: {input_alignment_seq_b}")
+                        print(f"residue to add to Seq B: {residue_to_append_to_seq_b}")
                         input_alignment_seq_b.append(residue_to_append_to_seq_b)
+                        print(f"updated input alignment seq B: {input_alignment_seq_b}")
 
-                        print(f"DEBUG:   After update (reversed):")
-                        print(f"DEBUG:     Seq A: {''.join(reversed(input_alignment_seq_a))}")
-                        print(f"DEBUG:     Seq B: {''.join(reversed(input_alignment_seq_b))}")
-                        print()
+                        print(f"After update (reversed to show natural order of sequence):")
+                        print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
+                        print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
 
-                        updated_input_alignments.append([input_alignment_seq_b, input_alignment_seq_b])
+                        updated_input_alignments.append([input_alignment_seq_a, input_alignment_seq_b])
 
                         self.traceback_cell(pointer_letter, pointer_row, pointer_col, updated_input_alignments, pointer_history)
 
@@ -760,7 +777,6 @@ class Align(object):
         Hint: include a way to printing the traceback path. This will be helpful for debugging!
            ex. M(5,4)->Iy(4,3)->M(4,2)->Ix(3,1)->Ix(2,1)->M(1,1)->M(0,0)
 
-
         """
         print("<<<<<<<<<<<<<<<<<<<<<<START TRACEBACK>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         max_val, max_locations = self.find_traceback_start()
@@ -772,7 +788,7 @@ class Align(object):
             max_coord_x = max_location[0]
             max_coord_y = max_location[1]
             print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
-            # self.traceback_cell("M", max_coord_x, max_coord_y)
+            self.traceback_cell("M", max_coord_x, max_coord_y)
         
         print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         print(f"Found {len(self.global_alignments)} optimal alignment(s)")
@@ -860,7 +876,8 @@ def main():
         print("Please specify an input file and an output file as args.")
         return
 
-    print("<<<<<<<<<<<<<<<<<<<<<<PROGRAM START>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"<<<<<<<<<<<<<<<<<<<<<<PROGRAM START [{timestamp}]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     # input variables
     input_file = sys.argv[1]
     output_file = sys.argv[2]
