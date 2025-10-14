@@ -939,9 +939,42 @@ class Align(object):
         print(f"<<<<<<<<<<find_traceback_start>>>>>>>>>>>>>>")
         if self.align_params.is_global_alignment_mode is True:
             # max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
-            max_val = self.m_matrix.get_score(self.align_params.len_seq_a, self.align_params.len_seq_b)
+            # max_val = self.m_matrix.get_score(self.align_params.len_seq_a, self.align_params.len_seq_b)
+            # Find max score along the highest row (last row)
+            highest_row = self.align_params.len_seq_a
+            max_val_row = float('-inf')
+            max_locations_row = []
 
-            return max_val, [(self.align_params.len_seq_a, self.align_params.len_seq_b)]
+            for j in range(self.m_matrix.ncol):
+                current_score = self.m_matrix.get_score(highest_row, j)
+                if current_score > max_val_row:
+                    max_val_row = current_score
+                    max_locations_row = [(highest_row, j)]
+                elif fuzzy_equals(current_score, max_val_row):
+                    max_locations_row.append((highest_row, j))
+
+            # Find max score along the highest column (last column)
+            highest_col = self.align_params.len_seq_b
+            max_val_col = float('-inf')
+            max_locations_col = []
+
+            for i in range(self.m_matrix.nrow):
+                current_score = self.m_matrix.get_score(i, highest_col)
+                if current_score > max_val_col:
+                    max_val_col = current_score
+                    max_locations_col = [(i, highest_col)]
+                elif fuzzy_equals(current_score, max_val_col):
+                    max_locations_col.append((i, highest_col))
+
+            # Determine which has the higher score
+            if max_val_row > max_val_col:
+                return max_val_row, max_locations_row
+            elif max_val_col > max_val_row:
+                return max_val_col, max_locations_col
+            else:
+                # Both have the same max score, combine locations
+                all_locations = max_locations_row + max_locations_col
+                return max_val_row, all_locations
 
         if self.align_params.is_global_alignment_mode is False:
             return self.find_max_score_and_location_local()
@@ -961,16 +994,24 @@ class Align(object):
         max_val, max_locations = self.find_traceback_start()
         print(f"Max score found = {max_val}")
         print(f"Num max_locations found = {len(max_locations)}")
+        print(f"max_locations = {max_locations}")
 
-        if self.align_params.is_global_alignment_mode is True:
-            print("GLOBAL ALIGNMENT")
+        self.m_matrix.print_scores()
+        self.m_matrix.print_pointers()
+        self.ix_matrix.print_scores()
+        self.ix_matrix.print_pointers()
+        self.iy_matrix.print_scores()
+        self.iy_matrix.print_pointers()
 
-            for max_location in max_locations:
-                print(f"max_location = {max_location}")
-                max_coord_x = max_location[0]
-                max_coord_y = max_location[1]
-                print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
-                self.traceback_cell("M", max_coord_x, max_coord_y)
+        #if self.align_params.is_global_alignment_mode is True:
+            #print("GLOBAL ALIGNMENT")
+
+        for max_location in max_locations:
+            print(f"max_location = {max_location}")
+            max_coord_x = max_location[0]
+            max_coord_y = max_location[1]
+            print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
+            self.traceback_cell("M", max_coord_x, max_coord_y)
 
         print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         print(f"Found {len(self.universal_alignments_bucket)} optimal alignment(s) of score {max_val}")
@@ -995,7 +1036,6 @@ class Align(object):
 
         print(f"final_score: {max_val}")
         print(f"final_alignments: {final_alignments}")
-
 
 
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
