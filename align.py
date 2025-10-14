@@ -226,7 +226,7 @@ class AlignmentParameters(object):
         # the input alignment file
         self.seq_a = ""
         self.seq_b = ""
-        self.global_alignment = False 
+        self.is_global_alignment_mode = False
         self.dx = 0
         self.ex = 0
         self.dy = 0
@@ -250,7 +250,7 @@ class AlignmentParameters(object):
         print_input_params(input_params_dict)
         self.seq_a = str(input_params_dict["seq_a"]).strip()
         self.seq_b = str(input_params_dict["seq_b"]).strip()
-        self.global_alignment = bool(input_params_dict["global_alignment"])
+        self.is_global_alignment_mode = bool(input_params_dict["global_alignment"])
         self.dx = float(input_params_dict["dx"])
         self.ex = float(input_params_dict["ex"])
         self.dy = float(input_params_dict["dy"])
@@ -291,7 +291,7 @@ class Align(object):
         self.m_matrix = None
         self.ix_matrix = None
         self.iy_matrix = None
-        self.global_alignments = list()
+        self.universal_alignments_bucket = list()
 
     def align(self):
         """
@@ -301,7 +301,7 @@ class Align(object):
         # load the alignment parameters into the align_params object
         self.align_params.load_params_from_file(self.input_file)
         print(f"Seq A: {self.align_params.seq_a}, Seq B: {self.align_params.seq_b}")
-        print(f"Global/ Local: {'Global' if self.align_params.global_alignment else 'Local'}")
+        print(f"Global/ Local: {'Global' if self.align_params.is_global_alignment_mode else 'Local'}")
 
         # populate the score matrices based on the input parameters
         self.populate_score_matrices()
@@ -496,7 +496,7 @@ class Align(object):
         max_score = max(score_from_m_matrix, score_from_ix_matrix, score_from_iy_matrix)
         print(f"max_score of 3 scores: {max_score:.2f}")
 
-        global_alignment: bool = self.align_params.global_alignment
+        global_alignment: bool = self.align_params.is_global_alignment_mode
         print(f"global_alignment: ", global_alignment)
         final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"final_max_score: ", final_max_score)
@@ -594,7 +594,7 @@ class Align(object):
         max_score = max(score_from_m_matrix, score_from_ix_matrix)
         print(f"max_score chosen: {max_score:.2f}")
 
-        global_alignment: bool = self.align_params.global_alignment
+        global_alignment: bool = self.align_params.is_global_alignment_mode
         print(f"global_alignment: ", global_alignment)
         final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"final_max_score: ", final_max_score)
@@ -682,7 +682,7 @@ class Align(object):
         max_score = max(score_from_m_matrix, score_from_iy_matrix)
         print(f"DEBUG:   max_score chosen: {max_score:.2f}")
 
-        global_alignment: bool = self.align_params.global_alignment
+        global_alignment: bool = self.align_params.is_global_alignment_mode
         final_max_score = max_score if global_alignment is True else max(0.0, max_score)
         print(f"global_alignment: ", global_alignment)
         print(f"final_max_score: ", final_max_score)
@@ -776,21 +776,27 @@ class Align(object):
 
         if curr_cell_score_matrix_letter == "M":
             pointers_from_curr_cell = self.m_matrix.get_pointers(row, col)
+            curr_cell_score = self.m_matrix.get_score(row, col)
         elif curr_cell_score_matrix_letter == "Ix":
             pointers_from_curr_cell = self.ix_matrix.get_pointers(row, col)
+            curr_cell_score = self.ix_matrix.get_score(row, col)
         elif curr_cell_score_matrix_letter == "Iy":
             pointers_from_curr_cell = self.iy_matrix.get_pointers(row, col)
+            curr_cell_score = self.iy_matrix.get_score(row, col)
         else:
             print("DEBUG: ERROR - Invalid matrix name!")
             return
 
-        if pointers_from_curr_cell is None or len(pointers_from_curr_cell) == 0:
+        is_global_alignment_mode: bool = self.align_params.is_global_alignment_mode
+
+        if pointers_from_curr_cell is None or (len(pointers_from_curr_cell) == 0) or \
+                (is_global_alignment_mode is False and curr_cell_score == 0):
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
             print(f"Input pointer history: {print_pointer_history}")
 
-            global_alignments = self.global_alignments
-            print(f"global_alignments BEFORE update:")
-            for alignment in self.global_alignments:
+            universal_alignments_bucket = self.universal_alignments_bucket
+            print(f"universal_alignments_bucket BEFORE update:")
+            for alignment in self.universal_alignments_bucket:
                 print(alignment[0])
                 print(alignment[1])
                 print("\n")
@@ -801,10 +807,10 @@ class Align(object):
                 print(alignment[1])
                 print("\n")
 
-            global_alignments.extend(input_alignments)
-            self.global_alignments = global_alignments
-            print(f"global_alignments AFTER update:")
-            for alignment in self.global_alignments:
+            universal_alignments_bucket.extend(input_alignments)
+            self.universal_alignments_bucket = universal_alignments_bucket
+            print(f"universal_alignments_bucket AFTER update:")
+            for alignment in self.universal_alignments_bucket:
                 print(alignment[0])
                 print(alignment[1])
                 print("\n")
@@ -900,6 +906,33 @@ class Align(object):
 
                         self.traceback_cell(pointer_letter, pointer_row, pointer_col, updated_input_alignments, pointer_history)
 
+    def find_max_score_and_location_local(self):
+
+        max_val = None
+        max_loc = list()
+
+        for i in range(self.m_matrix.nrow):
+            for j in range(self.m_matrix.ncol):
+                curr_cell_score = self.m_matrix.get_score(i, j)
+
+                if max_val is None:
+                    max_val = curr_cell_score
+                    max_loc.append((i, j))
+                    continue
+
+                if fuzzy_equals(max_val, curr_cell_score) is True:
+                    max_loc.append((i, j))
+                    continue
+
+                if max_val > curr_cell_score:
+                    continue
+
+                if max_val < curr_cell_score:
+                    max_val = curr_cell_score
+                    max_loc = [(i, j)]
+
+        return max_val, max_loc
+
     def find_traceback_start(self):
         """
         Finds the location to start the traceback..
@@ -911,11 +944,17 @@ class Align(object):
              (ex. [(1,2), (3,4)])
         """
         print(f"<<<<<<<<<<find_traceback_start>>>>>>>>>>>>>>")
-        if self.align_params.global_alignment is True:
+        if self.align_params.is_global_alignment_mode is True:
             # max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
             max_val = self.m_matrix.get_score(self.align_params.len_seq_a, self.align_params.len_seq_b)
 
             return max_val, [(self.align_params.len_seq_a, self.align_params.len_seq_b)]
+
+        if self.align_params.is_global_alignment_mode is False:
+            return self.find_max_score_and_location_local()
+
+        raise("Invalid global align param value")
+        return
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
         """
@@ -926,12 +965,12 @@ class Align(object):
         """
         print("<<<<<<<<<<<<<<<<<<<<<<START TRACEBACK>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
-        if self.align_params.global_alignment is True:
+        max_val, max_locations = self.find_traceback_start()
+        print(f"Max score found = {max_val}")
+        print(f"Num max_locations found = {len(max_locations)}")
+
+        if self.align_params.is_global_alignment_mode is True:
             print("GLOBAL ALIGNMENT")
-
-            max_val, max_locations = self.find_traceback_start()
-
-            print(f"Num max_locations found = {len(max_locations)}")
 
             for max_location in max_locations:
                 print(f"max_location = {max_location}")
@@ -940,32 +979,30 @@ class Align(object):
                 print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
                 self.traceback_cell("M", max_coord_x, max_coord_y)
 
-            print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            print(f"Found {len(self.global_alignments)} optimal alignment(s) of score {max_val}")
+        print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(f"Found {len(self.universal_alignments_bucket)} optimal alignment(s) of score {max_val}")
 
-            final_alignments = list()
+        final_alignments = list()
 
-            for idx, alignment in enumerate(self.global_alignments):
-                print(f"\nAlignment without trimming {idx+1}:")
-                print(f"Seq A: {''.join(reversed(alignment[0]))}")
-                print(f"Seq B: {''.join(reversed(alignment[1]))}")
+        for idx, alignment in enumerate(self.universal_alignments_bucket):
+            print(f"\nAlignment without trimming {idx+1}:")
+            print(f"Seq A: {''.join(reversed(alignment[0]))}")
+            print(f"Seq B: {''.join(reversed(alignment[1]))}")
 
-                print("trimming and reversing sequences")
-                final_seq_a, final_seq_b = trim_reverse_join_alignment(alignment[0], alignment[1])
+            print("trimming and reversing sequences")
+            final_seq_a, final_seq_b = trim_reverse_join_alignment(alignment[0], alignment[1])
 
-                print(f"final sequences:")
-                print(final_seq_a)
-                print(final_seq_b)
+            print(f"final sequences:")
+            print(final_seq_a)
+            print(final_seq_b)
 
-                final_alignments.append((final_seq_a, final_seq_b))
+            final_alignments.append((final_seq_a, final_seq_b))
 
-            final_alignments = list(set(final_alignments))
+        final_alignments = list(set(final_alignments))
 
-            print(f"final_score: {max_val}")
-            print(f"final_alignments: {final_alignments}")
+        print(f"final_score: {max_val}")
+        print(f"final_alignments: {final_alignments}")
 
-        else:
-            return
 
 
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
