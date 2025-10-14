@@ -512,9 +512,7 @@ class Align(object):
         print(f"<<<<<<<<<<m_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
 
         # If local alignment and final_score is 0.0, no pointers
-        if global_alignment is False:
-            print("global alignment is False")
-            if fuzzy_equals(0.0, final_max_score) is True:
+        if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
                 print("local alginment. cell score 0.0. no pointers from cell")
         else:
             # m_matrix_pointers = self.m_matrix_pointers
@@ -608,9 +606,7 @@ class Align(object):
 
         print(f"<<<<<<<<<<ix_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
         # If local alignment and final_score is 0.0, no pointers
-        if global_alignment is False:
-            print("global alignment is False")
-            if fuzzy_equals(0.0, final_max_score) is True:
+        if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
                 print("local alginment. cell score 0.0. no pointers from cell")
         else:
             # ix_matrix_pointers = self.ix_matrix_pointers
@@ -696,13 +692,10 @@ class Align(object):
 
         print(f"<<<<<<<<<<iy_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
         # If local alignment and final_score is 0.0, no pointers
-        if global_alignment is False:
-            print("global alignment is False")
-            if fuzzy_equals(0.0, final_max_score) is True:
-                print("local alginment. cell score 0.0. no pointers from cell")
+        if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
+            print("local alginment. cell score 0.0. no pointers from cell")
         else:
             # iy_matrix_pointers = self.iy_matrix_pointers
-
             # if type(iy_matrix_pointers[row, col]) != list:
               #  iy_matrix_pointers[row, col] = list()
 
