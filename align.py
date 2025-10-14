@@ -246,7 +246,7 @@ class Align(object):
 
         # perform a traceback and write the output to an output file
         print("Calling traceback")
-        # self.traceback()
+        self.traceback()
 
     def populate_score_matrices(self):
         """
@@ -426,7 +426,6 @@ class Align(object):
         print(f"final pointers in m_matrix_pointers cell: M[{row},{col}] = pointers: {self.m_matrix_pointers[row, col]}")
         print(f"<<<<<<<<<<m_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
-
     def update_ix(self, row, col):
 
         print(f"<<<<<<<<<<<<<inside update_ix({row},{col})>>>>>>>>>>>>>>>>>")
@@ -588,33 +587,6 @@ class Align(object):
         """
         print(f"<<<<<<<<<<iy_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
-    def find_traceback_start(self):
-        """
-        Finds the location to start the traceback..
-        Think carefully about how to set this up for local 
-
-        Returns:
-            (max_val, max_loc) where max_val is the best score
-            max_loc is a set() containing tuples with the (i,j) location(s) to start the traceback
-             (ex. [(1,2), (3,4)])
-        """
-        print("DEBUG: Finding traceback start...")
-        ### TO-DO! FILL IN ###
-        if self.align_params.global_alignment is True:
-            print("DEBUG: Global alignment - looking for max in last row/column")
-            max_m_matrix = max(self.m_matrix[self.align_params.len_seq_a:].max(), self.m_matrix[:self.align_params.len_seq_b].max())
-            print(f"DEBUG:   Max from M matrix edges: {max_m_matrix}")
-            max_ix_matrix = max(self.ix_matrix[self.align_params.len_seq_a:].max(), self.ix_matrix[:self.align_params.len_seq_b].max())
-            print(f"DEBUG:   Max from Ix matrix edges: {max_ix_matrix}")
-            max_iy_matrix = max(self.iy_matrix[self.align_params.len_seq_a:].max(), self.iy_matrix[:self.align_params.len_seq_b].max())
-            print(f"DEBUG:   Max from Iy matrix edges: {max_iy_matrix}")
-
-            max_of_maxes = max(max_m_matrix, max_ix_matrix, max_iy_matrix)
-            print(f"DEBUG:   Overall max score: {max_of_maxes}")
-            print(f"DEBUG:   Starting traceback from position: ({self.align_params.len_seq_a}, {self.align_params.len_seq_b})")
-
-            return max_of_maxes, (self.align_params.len_seq_a, self.align_params.len_seq_b)
-
     def traceback_cell(self, curr_cell_score_matrix_letter, row, col, input_alignments=None, pointer_history=None):
 
         seq_a = self.align_params.seq_a
@@ -628,7 +600,6 @@ class Align(object):
 
         print(f"\n<<<<<<<<<<<<<<<<NOW STARTING TRACEBACK IN CELL: {curr_cell_score_matrix_letter} ({row}, {col})>>>>>>>>>>>>>>>>")
 
-        print(f"\nDEBUG: === Traceback cell {curr_cell_score_matrix_letter}[{row},{col}] ===")
         print(f"DEBUG:   Current matrix: {curr_cell_score_matrix_letter}")
         print(f"DEBUG:   Position: ({row}, {col})")
         print(f"DEBUG:   Input alignments so far: {len(input_alignments)} path(s)")
@@ -767,6 +738,22 @@ class Align(object):
 
                         self.traceback_cell(pointer_letter, pointer_row, pointer_col, updated_input_alignments, pointer_history)
 
+    def find_traceback_start(self):
+        """
+        Finds the location to start the traceback..
+        Think carefully about how to set this up for local
+
+        Returns:
+            (max_val, max_loc) where max_val is the best score
+            max_loc is a set() containing tuples with the (i,j) location(s) to start the traceback
+             (ex. [(1,2), (3,4)])
+        """
+        print(f"<<<<<<<<<<find_traceback_start>>>>>>>>>>>>>>")
+        if self.align_params.global_alignment is True:
+            max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
+
+            return max_val, [(self.align_params.len_seq_a, self.align_params.len_seq_b)]
+
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
         """
         Performs a traceback.
@@ -776,14 +763,19 @@ class Align(object):
 
         """
         print("<<<<<<<<<<<<<<<<<<<<<<START TRACEBACK>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        ### TO-DO! FILL IN ###
-        max_val, max_location = self.find_traceback_start()
-        print(f"DEBUG: Starting from M[{max_location[0]},{max_location[1]}] with score {max_val}")
+        max_val, max_locations = self.find_traceback_start()
+
+        print(f"Num max_locations found = {len(max_locations)}")
+
+        for max_location in max_locations:
+            print(f"max_location = {max_location}")
+            max_coord_x = max_location[0]
+            max_coord_y = max_location[1]
+            print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
+            # self.traceback_cell("M", max_coord_x, max_coord_y)
         
-        self.traceback_cell("M", max_location[0], max_location[1])
-        
-        print(f"\nDEBUG: ========== TRACEBACK COMPLETE ==========")
-        print(f"DEBUG: Found {len(self.global_alignments)} optimal alignment(s)")
+        print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(f"Found {len(self.global_alignments)} optimal alignment(s)")
         
         for idx, alignment in enumerate(self.global_alignments):
             print(f"\nDEBUG: Alignment {idx+1}:")
