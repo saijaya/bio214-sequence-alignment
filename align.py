@@ -70,7 +70,7 @@ class MatchMatrix(object):
     Match matrix class stores the scores of matches in a data structure
     """
     def __init__(self):
-        pass
+        self.matrix = {}
 
     def set_score(self, a, b, score):
         """
@@ -81,7 +81,10 @@ class MatchMatrix(object):
            b = the character from sequence B
            score = the score to set it for
         """
-        ### TO-DO! FILL IN ###
+        if a not in self.matrix:
+            self.matrix[a] = {}
+
+        self.matrix[a][b] = score
 
     def get_score(self, a, b):
         """
@@ -94,8 +97,25 @@ class MatchMatrix(object):
         Returns:
            the score of that match
         """
-        ### TO-DO! FILL IN ###
+        return self.matrix[a][b]
 
+
+class Score(object):
+    def __init__(self):
+        self.score_value = None
+        self.pointers = set()
+
+    def set_score_value(self, value):
+        self.score_value = value
+
+    def get_score_value(self, value):
+        return self.score_value
+
+    def add_score_pointer(self, pointer_tuple):
+        self.pointers.add(pointer_tuple)
+
+    def get_score_pointers(self):
+        return self.pointers
 
 
 class ScoreMatrix(object):
@@ -157,6 +177,7 @@ class ScoreMatrix(object):
 
         ### TO-DO! FILL IN ###
 
+
 class AlignmentParameters(object):
     """
     Object to hold a set of alignment parameters from an input file.
@@ -205,7 +226,9 @@ class AlignmentParameters(object):
         self.len_seq_a = len(self.seq_a)
         self.len_seq_b = len(self.seq_b)
 
-        self.match_matrix = input_params_dict["match_matrix"]
+        self.match_matrix_df = input_params_dict["match_matrix"]
+        for entry in input_params_dict["match_matrix"]:
+            self.match_matrix.set_score(entry["seq_A_residue"], entry["seq_B_residue"], entry["score"])
 
 
 class Align(object):
@@ -259,6 +282,8 @@ class Align(object):
         num_rows_in_score_matrices = self.align_params.len_seq_a+1
         num_columns_in_score_matrices = self.align_params.len_seq_b + 1
         print(f"DEBUG: Matrix size: {num_rows_in_score_matrices}x{num_columns_in_score_matrices}")
+
+        self.m_matrix_new = ScoreMatrix("M", num_rows_in_score_matrices, num_columns_in_score_matrices)
 
         self.m_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
         self.m_matrix[0, :] = 0.0
@@ -330,7 +355,7 @@ class Align(object):
         print(f"considering subsequences: \nseq A [0:{row}] = '{self.align_params.seq_a[0:row]}', \nseq B [0:{col}] = '{self.align_params.seq_b[0:col]}'")
         print(f"considering residues: \nXi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
-        self.s_matrix = pd.DataFrame(self.align_params.match_matrix)
+        self.s_matrix = pd.DataFrame(self.align_params.match_matrix_df)
         print("s_matrix converted to dataframe. calling sub updates")
         self.update_m(row, col)
         self.update_ix(row, col)
@@ -359,8 +384,16 @@ class Align(object):
         print(s_matrix)
         s_matrix_slice = s_matrix[s_matrix["seq_A_residue"] == curr_residue_a]
         s_matrix_slice = s_matrix_slice[s_matrix["seq_B_residue"] == curr_residue_b]
-        s_ij_match = float(list(s_matrix_slice["score"])[0])
+        s_ij_match_df = float(list(s_matrix_slice["score"])[0])
+        print(f"residue match score (from lookup match_matrix DF: {s_ij_match_df}")
+
+        s_ij_match = self.align_params.match_matrix.get_score(curr_residue_a, curr_residue_b)
         print(f"residue match score (from lookup match_matrix: {s_ij_match}")
+
+        if fuzzy_equals(s_ij_match, s_ij_match_df):
+            print(f"✓ Verification PASSED: Both methods give same score")
+        else:
+            print(f"❌ WARNING: Score mismatch! Dict={s_ij_match}, DF={s_ij_match_df}")
 
         # in order to update score in current cell, we need max of 3 scores
         print("in order to update score in current cell, we need max of 3 scores")
