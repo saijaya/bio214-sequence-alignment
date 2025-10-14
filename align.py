@@ -102,17 +102,17 @@ class MatchMatrix(object):
 
 class Score(object):
     def __init__(self):
-        self.score_value = None
-        self.pointers = set()
+        self.score_value = 0
+        self.pointers = list()
 
     def set_score_value(self, value):
         self.score_value = value
 
-    def get_score_value(self, value):
+    def get_score_value(self):
         return self.score_value
 
     def add_score_pointer(self, pointer_tuple):
-        self.pointers.add(pointer_tuple)
+        self.pointers.append(pointer_tuple)
 
     def get_score_pointers(self):
         return self.pointers
@@ -125,20 +125,24 @@ class ScoreMatrix(object):
     """
 
     def __init__(self, name, nrow, ncol):
-        self.name = name # identifier for the score matrix - Ix, Iy, or M
+        assert name in ["M", "Ix", "Iy"], "Invalid score matrix name"
+        self.name = name  # identifier for the score matrix - Ix, Iy, or M
         self.nrow = nrow
         self.ncol = ncol
-        self.score_matrix # FILL IN 
+        self.score_matrix = np.empty((nrow, ncol), dtype=object)
+        for i in range(nrow):
+            for j in range(ncol):
+                self.score_matrix[i, j] = Score()
         # you need to figure out a way to represent this and how to initialize
         # Hint: it may be helpful to have an object for each entry
 
     def get_score(self, row, col):
         ### TO-DO! FILL IN ###
-        pass
-        
+        return self.score_matrix[row, col].get_score_value()
+
     def set_score(self, row, col, score):    
         ### TO-DO! FILL IN ###
-        pass
+        self.score_matrix[row, col].set_score_value(value=score)
 
     def get_pointers(self, row, col):
         """
@@ -147,10 +151,14 @@ class ScoreMatrix(object):
          ex. [(1,1), (1,0)]
         """
         ### TO-DO! FILL IN ###
+        return self.score_matrix[row, col].get_score_pointers()
 
-    def set_pointers(self, row, col): ### TO-DO! FILL IN - this needs additional arguments ###
+    def set_pointers(self, row, col, pointer: list): ### TO-DO! FILL IN - this needs additional arguments ###
         ### TO-DO! FILL IN ###
-        pass
+        assert len(pointer) == 3, "invalid pointer"
+        curr_pointers: list = self.score_matrix[row, col].get_score_pointers()
+        curr_pointers.append(pointer)
+        self.score_matrix[row, col] = curr_pointers
 
     def print_scores(self):
         """
@@ -167,15 +175,33 @@ class ScoreMatrix(object):
 
         """
         ### TO-DO! FILL IN ###
-        pass
-
+        result = f"{self.name}=\n"
+        for i in range(self.nrow):
+            row_scores = []
+            for j in range(self.ncol):
+                score_value = self.get_score(i, j)
+                row_scores.append(f"{score_value:.1f}")
+            result += "    " + ", ".join(row_scores) + "\n"
+        print(result)
 
     def print_pointers(self):
         """
         Returns a nicely formatted string containing the pointers for each entry in the score matrix. Use this for debugging!
         """
-
         ### TO-DO! FILL IN ###
+        result = f"{self.name} Pointers=\n"
+        for i in range(self.nrow):
+            row_pointers = []
+            for j in range(self.ncol):
+                pointers = self.get_pointers(i, j)
+                if pointers:
+                    # Format pointers as a list
+                    pointer_str = str(pointers)
+                else:
+                    pointer_str = "[]"
+                row_pointers.append(pointer_str)
+            result += "    " + ", ".join(row_pointers) + "\n"
+        print(result)
 
 
 class AlignmentParameters(object):
@@ -283,7 +309,18 @@ class Align(object):
         num_columns_in_score_matrices = self.align_params.len_seq_b + 1
         print(f"DEBUG: Matrix size: {num_rows_in_score_matrices}x{num_columns_in_score_matrices}")
 
-        self.m_matrix_new = ScoreMatrix("M", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        print("~!~Initializing ScoreMatrix")
+        m_matrix = ScoreMatrix("M", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        m_matrix.print_scores()
+        m_matrix.print_pointers()
+
+        ix_matrix = ScoreMatrix("Ix", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        ix_matrix.print_scores()
+        ix_matrix.print_pointers()
+
+        iy_matrix = ScoreMatrix("Iy", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        iy_matrix.print_scores()
+        iy_matrix.print_pointers()
 
         self.m_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
         self.m_matrix[0, :] = 0.0
