@@ -640,13 +640,6 @@ class Align(object):
         if pointers_from_curr_cell is None or len(pointers_from_curr_cell) == 0:
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
             print(f"Input pointer history: {print_pointer_history}")
-            print(f"input_alignments:")
-            print(input_alignments)
-
-            for alignment in input_alignments:
-                print(alignment[0])
-                print(alignment[1])
-                print("\n")
 
             global_alignments = self.global_alignments
             print(f"global_alignments BEFORE update:")
@@ -655,11 +648,16 @@ class Align(object):
                 print(alignment[1])
                 print("\n")
 
+            print(f"alignments to be added (input_alignments):")
+            for alignment in input_alignments:
+                print(alignment[0])
+                print(alignment[1])
+                print("\n")
+
             global_alignments.extend(input_alignments)
             self.global_alignments = global_alignments
             print(f"global_alignments AFTER update:")
             for alignment in self.global_alignments:
-                print(alignment)
                 print(alignment[0])
                 print(alignment[1])
                 print("\n")
@@ -707,7 +705,7 @@ class Align(object):
                     print(f"pointer_letter is {pointer_letter}-> gap in B: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
 
                 elif pointer_letter == "Iy":
-                    residue_to_append_to_seq_a = "-"
+                    residue_to_append_to_seq_a = "_"
                     print(f"residue_to_append_to_seq_a = - : {residue_to_append_to_seq_a}")
 
                     residue_to_append_to_seq_b = seq_b[col - 1]
