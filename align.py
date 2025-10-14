@@ -308,7 +308,7 @@ class Align(object):
 
         # perform a traceback and write the output to an output file
         print("Calling traceback")
-        # self.traceback()
+        self.traceback()
 
     def populate_score_matrices(self):
         """
@@ -757,6 +757,7 @@ class Align(object):
                 print(f"DEBUG:     Seq B: {''.join(reversed(alignment[1]))}")
                 print()
 
+        """
         if curr_cell_score_matrix_letter == "M":
             pointers_from_curr_cell_matrix = self.m_matrix_pointers
         elif curr_cell_score_matrix_letter == "Ix":
@@ -771,6 +772,17 @@ class Align(object):
         print_pointer_matrix(pointers_from_curr_cell_matrix)
         pointers_from_curr_cell = pointers_from_curr_cell_matrix[row, col]
         print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
+        """
+
+        if curr_cell_score_matrix_letter == "M":
+            pointers_from_curr_cell = self.m_matrix.get_pointers(row, col)
+        elif curr_cell_score_matrix_letter == "Ix":
+            pointers_from_curr_cell = self.ix_matrix.get_pointers(row, col)
+        elif curr_cell_score_matrix_letter == "Iy":
+            pointers_from_curr_cell = self.iy_matrix.get_pointers(row, col)
+        else:
+            print("DEBUG: ERROR - Invalid matrix name!")
+            return
 
         if pointers_from_curr_cell is None or len(pointers_from_curr_cell) == 0:
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
@@ -900,7 +912,8 @@ class Align(object):
         """
         print(f"<<<<<<<<<<find_traceback_start>>>>>>>>>>>>>>")
         if self.align_params.global_alignment is True:
-            max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
+            # max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
+            max_val = self.m_matrix.get_score(self.align_params.len_seq_a, self.align_params.len_seq_b)
 
             return max_val, [(self.align_params.len_seq_a, self.align_params.len_seq_b)]
 
@@ -912,40 +925,47 @@ class Align(object):
 
         """
         print("<<<<<<<<<<<<<<<<<<<<<<START TRACEBACK>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        max_val, max_locations = self.find_traceback_start()
 
-        print(f"Num max_locations found = {len(max_locations)}")
+        if self.align_params.global_alignment is True:
+            print("GLOBAL ALIGNMENT")
 
-        for max_location in max_locations:
-            print(f"max_location = {max_location}")
-            max_coord_x = max_location[0]
-            max_coord_y = max_location[1]
-            print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
-            self.traceback_cell("M", max_coord_x, max_coord_y)
-        
-        print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(f"Found {len(self.global_alignments)} optimal alignment(s) of score {max_val}")
+            max_val, max_locations = self.find_traceback_start()
 
-        final_alignments = list()
-        
-        for idx, alignment in enumerate(self.global_alignments):
-            print(f"\nAlignment without trimming {idx+1}:")
-            print(f"Seq A: {''.join(reversed(alignment[0]))}")
-            print(f"Seq B: {''.join(reversed(alignment[1]))}")
+            print(f"Num max_locations found = {len(max_locations)}")
 
-            print("trimming and reversing sequences")
-            final_seq_a, final_seq_b = trim_reverse_join_alignment(alignment[0], alignment[1])
+            for max_location in max_locations:
+                print(f"max_location = {max_location}")
+                max_coord_x = max_location[0]
+                max_coord_y = max_location[1]
+                print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
+                self.traceback_cell("M", max_coord_x, max_coord_y)
 
-            print(f"final sequences:")
-            print(final_seq_a)
-            print(final_seq_b)
+            print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            print(f"Found {len(self.global_alignments)} optimal alignment(s) of score {max_val}")
 
-            final_alignments.append((final_seq_a, final_seq_b))
+            final_alignments = list()
 
-        final_alignments = list(set(final_alignments))
+            for idx, alignment in enumerate(self.global_alignments):
+                print(f"\nAlignment without trimming {idx+1}:")
+                print(f"Seq A: {''.join(reversed(alignment[0]))}")
+                print(f"Seq B: {''.join(reversed(alignment[1]))}")
 
-        print(f"final_score: {max_val}")
-        print(f"final_alignments: {final_alignments}")
+                print("trimming and reversing sequences")
+                final_seq_a, final_seq_b = trim_reverse_join_alignment(alignment[0], alignment[1])
+
+                print(f"final sequences:")
+                print(final_seq_a)
+                print(final_seq_b)
+
+                final_alignments.append((final_seq_a, final_seq_b))
+
+            final_alignments = list(set(final_alignments))
+
+            print(f"final_score: {max_val}")
+            print(f"final_alignments: {final_alignments}")
+
+        else:
+            return
 
 
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
