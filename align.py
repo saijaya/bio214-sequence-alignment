@@ -174,15 +174,26 @@ class ScoreMatrix(object):
 
         """
         ### TO-DO! FILL IN ###
-        result = f"{self.name}=\n"
-        for i in range(self.nrow):
-            row_scores = []
-            for j in range(self.ncol):
+        print(f"\n{self.name} Scores:")
+        rows, cols = self.nrow, self.ncol
+
+        # Create a formatted version for display
+        display_matrix = []
+        for i in range(rows):
+            row_data = []
+            for j in range(cols):
                 score_value = self.get_score(i, j)
                 # Format with proper spacing for negatives and decimals
-                row_scores.append(f"{score_value:6.1f}")
-            result += "    " + ", ".join(row_scores) + "\n"
-        print(result)
+                row_data.append(f"{score_value:6.1f}")
+            display_matrix.append(row_data)
+
+        # Create DataFrame with row and column indices
+        df = pd.DataFrame(display_matrix,
+                          columns=[str(j) for j in range(cols)],
+                          index=[str(i) for i in range(rows)])
+
+        print(df)
+        print()
 
     def print_pointers(self):
         """
@@ -430,6 +441,7 @@ class Align(object):
         print(f"considering residues: \nXi (seq_a[{row-1}]) = '{self.align_params.seq_a[row-1]}', \nYj (seq_b[{col-1}]) = '{self.align_params.seq_b[col-1]}'")
 
         self.s_matrix = pd.DataFrame(self.align_params.match_matrix_df)
+        print(self.s_matrix)
         print("s_matrix converted to dataframe. calling sub updates")
         self.update_m(row, col)
         self.update_ix(row, col)
@@ -738,7 +750,7 @@ class Align(object):
         print(f"DEBUG:   Input alignments so far: {len(input_alignments)} path(s)")
         print_pointer_history = "--->".join(
             [str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in pointer_history])
-        print(f"Input pointer history: {print_pointer_history}")
+        print(f"Input pointer_to_next_cell history: {print_pointer_history}")
         
         print(f"DEBUG: INCOMING ALIGNMENTS (reversed for readability):")
         if len(input_alignments) == 0:
@@ -749,23 +761,6 @@ class Align(object):
                 print(f"DEBUG:     Seq A: {''.join(reversed(alignment[0]))}")
                 print(f"DEBUG:     Seq B: {''.join(reversed(alignment[1]))}")
                 print()
-
-        """
-        if curr_cell_score_matrix_letter == "M":
-            pointers_from_curr_cell_matrix = self.m_matrix_pointers
-        elif curr_cell_score_matrix_letter == "Ix":
-            pointers_from_curr_cell_matrix = self.ix_matrix_pointers
-        elif curr_cell_score_matrix_letter == "Iy":
-            pointers_from_curr_cell_matrix = self.iy_matrix_pointers
-        else:
-            print("DEBUG: ERROR - Invalid matrix name!")
-            return
-
-        print("pointers_from_curr_cell_matrix:")
-        print_pointer_matrix(pointers_from_curr_cell_matrix)
-        pointers_from_curr_cell = pointers_from_curr_cell_matrix[row, col]
-        print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
-        """
 
         if curr_cell_score_matrix_letter == "M":
             pointers_from_curr_cell = self.m_matrix.get_pointers(row, col)
@@ -780,12 +775,95 @@ class Align(object):
             print("DEBUG: ERROR - Invalid matrix name!")
             return
 
+        print(f"curr_cell_score: {curr_cell_score}")
+        print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
+        self.m_matrix.print_scores()
+        self.m_matrix.print_pointers()
+        self.ix_matrix.print_scores()
+        self.ix_matrix.print_pointers()
+        self.iy_matrix.print_scores()
+        self.iy_matrix.print_pointers()
+
         is_global_alignment_mode: bool = self.align_params.is_global_alignment_mode
 
+        print(f"seq_a: {seq_a}")
+        print(f"seq_b: {seq_b}")
+
+        # First we deal with curr cell letter: This determines what residues are to be added to input alignments
+        if curr_cell_score_matrix_letter == "M":
+            residue_to_append_to_seq_a = seq_a[row - 1]
+            print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
+            residue_to_append_to_seq_b = seq_b[col - 1]
+            print(f"residue_to_append_to_seq_b = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
+
+            print(
+                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> No gap: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
+
+        elif curr_cell_score_matrix_letter == "Ix":
+            residue_to_append_to_seq_a = seq_a[row - 1]
+            print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
+
+            residue_to_append_to_seq_b = "_"
+            print(f"residue_to_append_to_seq_b = - : {residue_to_append_to_seq_b}")
+
+            print(
+                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> gap in B: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
+
+        elif curr_cell_score_matrix_letter == "Iy":
+            residue_to_append_to_seq_a = "_"
+            print(f"residue_to_append_to_seq_a = - : {residue_to_append_to_seq_a}")
+
+            residue_to_append_to_seq_b = seq_b[col - 1]
+            print(f"residue_to_append_to_seq_a = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
+
+            print(
+                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> gap in A: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
+
+        else:
+            print("DEBUG: ERROR - Invalid next_cell_letter!")
+            return
+
+        # Now update input alignments based on above
+        updated_input_alignments = list()
+        if len(input_alignments) == 0:
+            updated_input_alignments = [[[residue_to_append_to_seq_a], [residue_to_append_to_seq_b]]]
+            # self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, pointer_history)
+        else:
+            # Update all input alignments with latest residue based on pointer_to_next_cell
+            print(
+                f"DEBUG: UPDATING ALIGNMENTS - adding '{residue_to_append_to_seq_a}' from seq A and '{residue_to_append_to_seq_b}' from seq B:")
+            for input_alignment in input_alignments:
+                print(f"~~Input alignement before update: {input_alignment}")
+
+                input_alignment_seq_a: list = input_alignment[0]
+                print(f"Before update (reversed to show natural order of sequence):")
+                print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
+
+                input_alignment_seq_b: list = input_alignment[1]
+                print(f"Before update (reversed to show natural order of sequence):")
+                print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
+
+                print(f"pre-updated input alignment seq A: {input_alignment_seq_a}")
+                print(f"residue to add to Seq A: {residue_to_append_to_seq_a}")
+                input_alignment_seq_a.append(residue_to_append_to_seq_a)
+                print(f"updated input alignment seq A: {input_alignment_seq_a}")
+
+                print(f"pre-updated input alignment seq B: {input_alignment_seq_b}")
+                print(f"residue to add to Seq B: {residue_to_append_to_seq_b}")
+                input_alignment_seq_b.append(residue_to_append_to_seq_b)
+                print(f"updated input alignment seq B: {input_alignment_seq_b}")
+
+                print(f"After update (reversed to show natural order of sequence):")
+                print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
+                print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
+
+                updated_input_alignments.append([input_alignment_seq_a, input_alignment_seq_b])
+
+        # Now we deal with pointers from curr cell
         if pointers_from_curr_cell is None or (len(pointers_from_curr_cell) == 0) or \
                 (is_global_alignment_mode is False and curr_cell_score == 0):
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
-            print(f"Input pointer history: {print_pointer_history}")
+            print(f"Input pointer_to_next_cell history: {print_pointer_history}")
 
             universal_alignments_bucket = self.universal_alignments_bucket
             print(f"universal_alignments_bucket BEFORE update:")
@@ -811,93 +889,25 @@ class Align(object):
         else:
             num_pointers_from_curr_cell = len(pointers_from_curr_cell)
 
-            # for each pointer:
-            # update alignment based on direction of pointer
+            # for each pointer_to_next_cell:
+            # update alignment based on direction of pointer_to_next_cell
             # M --> both curr residues added to all existing alignments in input alignments
             # Ix --> Gap in B. include residue from seq_a
             # Iy --> Gap in A. Include residue from seq_b
-            # Once updated, call next cell with updated input alignment and next cell details from pointer
+            # Once updated, call next cell with updated input alignment and next cell details from pointer_to_next_cell
             print(f"Looping through {num_pointers_from_curr_cell} pointers")
-            for idx, pointer in enumerate(pointers_from_curr_cell):
-                print(f"\npointer {idx+1}/{num_pointers_from_curr_cell}")
-                print(f"pointer: {pointer}")
+            for idx, pointer_to_next_cell in enumerate(pointers_from_curr_cell):
+                print(f"\npointer_to_next_cell {idx+1}/{num_pointers_from_curr_cell}")
+                print(f"pointer_to_next_cell: {pointer_to_next_cell}")
                 pointer_history.append([curr_cell_score_matrix_letter, row, col])
                 print_pointer_history = "--->".join([str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in pointer_history])
-                print(f"Updated pointer history: {print_pointer_history}")
+                print(f"Updated pointer_to_next_cell history: {print_pointer_history}")
 
-                pointer_letter = pointer[0]
-                pointer_row = pointer[1]
-                pointer_col = pointer[2]
+                next_cell_letter = pointer_to_next_cell[0]
+                next_cell_row = pointer_to_next_cell[1]
+                next_cell_col = pointer_to_next_cell[2]
 
-                updated_input_alignments = list()
-                print(f"seq_a: {seq_a}")
-                print(f"seq_b: {seq_b}")
-
-                if pointer_letter == "M":
-                    residue_to_append_to_seq_a = seq_a[row-1]
-                    print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
-                    residue_to_append_to_seq_b = seq_b[col-1]
-                    print(f"residue_to_append_to_seq_b = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
-
-                    print(f"pointer_letter is {pointer_letter}-> No gap: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
-
-                elif pointer_letter == "Ix":
-                    residue_to_append_to_seq_a = seq_a[row - 1]
-                    print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
-
-                    residue_to_append_to_seq_b = "_"
-                    print(f"residue_to_append_to_seq_b = - : {residue_to_append_to_seq_b}")
-
-                    print(f"pointer_letter is {pointer_letter}-> gap in B: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
-
-                elif pointer_letter == "Iy":
-                    residue_to_append_to_seq_a = "_"
-                    print(f"residue_to_append_to_seq_a = - : {residue_to_append_to_seq_a}")
-
-                    residue_to_append_to_seq_b = seq_b[col - 1]
-                    print(f"residue_to_append_to_seq_a = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
-
-                    print(f"pointer_letter is {pointer_letter}-> gap in A: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
-
-                else:
-                    print("DEBUG: ERROR - Invalid pointer_letter!")
-                    return
-
-                if len(input_alignments) == 0:
-                    updated_input_alignments = [[[residue_to_append_to_seq_a], [residue_to_append_to_seq_b]]]
-                    self.traceback_cell(pointer_letter, pointer_row, pointer_col, updated_input_alignments, pointer_history)
-
-                else:
-                    # Update all input alignments with latest residue based on pointer
-                    print(f"DEBUG: UPDATING ALIGNMENTS - adding '{residue_to_append_to_seq_a}' from seq A and '{residue_to_append_to_seq_b}' from seq B:")
-                    for input_alignment in input_alignments:
-                        print(f"~~Input alignement before update: {input_alignment}")
-
-                        input_alignment_seq_a: list = input_alignment[0]
-                        print(f"Before update (reversed to show natural order of sequence):")
-                        print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
-
-                        input_alignment_seq_b: list = input_alignment[1]
-                        print(f"Before update (reversed to show natural order of sequence):")
-                        print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
-
-                        print(f"pre-updated input alignment seq A: {input_alignment_seq_a}")
-                        print(f"residue to add to Seq A: {residue_to_append_to_seq_a}")
-                        input_alignment_seq_a.append(residue_to_append_to_seq_a)
-                        print(f"updated input alignment seq A: {input_alignment_seq_a}")
-
-                        print(f"pre-updated input alignment seq B: {input_alignment_seq_b}")
-                        print(f"residue to add to Seq B: {residue_to_append_to_seq_b}")
-                        input_alignment_seq_b.append(residue_to_append_to_seq_b)
-                        print(f"updated input alignment seq B: {input_alignment_seq_b}")
-
-                        print(f"After update (reversed to show natural order of sequence):")
-                        print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
-                        print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
-
-                        updated_input_alignments.append([input_alignment_seq_a, input_alignment_seq_b])
-
-                        self.traceback_cell(pointer_letter, pointer_row, pointer_col, updated_input_alignments, pointer_history)
+                self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, pointer_history)
 
     def find_max_score_and_location_local(self):
 
@@ -1036,6 +1046,7 @@ class Align(object):
 
         print(f"final_score: {max_val}")
         print(f"final_alignments: {final_alignments}")
+        print(self.s_matrix)
 
 
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
@@ -1093,6 +1104,7 @@ def read_input_file(filename):
 
     # gap penalties
     gaps = clean[3].split()
+
     input_params['dx'] = float(gaps[0])
     input_params['ex'] = float(gaps[1])
     input_params['dy'] = float(gaps[2])
