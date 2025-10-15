@@ -845,19 +845,19 @@ class Align(object):
 
                 print(f"pre-updated input alignment seq A: {input_alignment_seq_a}")
                 print(f"residue to add to Seq A: {residue_to_append_to_seq_a}")
-                input_alignment_seq_a.append(residue_to_append_to_seq_a)
-                print(f"updated input alignment seq A: {input_alignment_seq_a}")
+                input_alignment_seq_a_updated = input_alignment_seq_a + [residue_to_append_to_seq_a]
+                print(f"updated input alignment seq A: {input_alignment_seq_a_updated}")
 
                 print(f"pre-updated input alignment seq B: {input_alignment_seq_b}")
                 print(f"residue to add to Seq B: {residue_to_append_to_seq_b}")
-                input_alignment_seq_b.append(residue_to_append_to_seq_b)
-                print(f"updated input alignment seq B: {input_alignment_seq_b}")
+                input_alignment_seq_b_updated = input_alignment_seq_b + [residue_to_append_to_seq_b]
+                print(f"updated input alignment seq B: {input_alignment_seq_b_updated}")
 
                 print(f"After update (reversed to show natural order of sequence):")
                 print(f"Seq A: {''.join(reversed(input_alignment_seq_a))}")
                 print(f"Seq B: {''.join(reversed(input_alignment_seq_b))}")
 
-                updated_input_alignments.append([input_alignment_seq_a, input_alignment_seq_b])
+                updated_input_alignments.append([input_alignment_seq_a_updated, input_alignment_seq_b_updated])
 
         # Now we deal with pointers from curr cell
         if pointers_from_curr_cell is None or (len(pointers_from_curr_cell) == 0) or \
@@ -911,6 +911,49 @@ class Align(object):
 
                 self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, pointer_history)
 
+    def find_max_score_and_location_global(self):
+        # Find max score along the highest row (last row)
+        highest_row = self.align_params.len_seq_a
+        max_val_row = float('-inf')
+        max_locations_row = []
+
+        for j in range(self.m_matrix.ncol):
+            current_score = self.m_matrix.get_score(highest_row, j)
+            if current_score > max_val_row:
+                max_val_row = current_score
+                max_locations_row = [(highest_row, j)]
+            elif fuzzy_equals(current_score, max_val_row):
+                max_locations_row.append((highest_row, j))
+            else:
+                continue
+
+        # Find max score along the highest column (last column)
+        highest_col = self.align_params.len_seq_b
+        max_val_col = float('-inf')
+        max_locations_col = []
+
+        for i in range(self.m_matrix.nrow):
+            current_score = self.m_matrix.get_score(i, highest_col)
+            if current_score > max_val_col:
+                max_val_col = current_score
+                max_locations_col = [(i, highest_col)]
+            elif fuzzy_equals(current_score, max_val_col):
+                max_locations_col.append((i, highest_col))
+            else:
+                continue
+
+        # Determine which has the higher score
+        if max_val_row > max_val_col:
+            return max_val_row, max_locations_row
+        elif max_val_col > max_val_row:
+            return max_val_col, max_locations_col
+        elif fuzzy_equals(max_val_col, max_val_row):
+            # Both have the same max score, combine locations
+            all_locations = max_locations_row + max_locations_col
+            return max_val_row, all_locations
+        else:
+            return
+
     def find_max_score_and_location_local(self):
 
         max_val = None
@@ -950,48 +993,11 @@ class Align(object):
         """
         print(f"<<<<<<<<<<find_traceback_start>>>>>>>>>>>>>>")
         if self.align_params.is_global_alignment_mode is True:
-            # max_val = self.m_matrix[self.align_params.len_seq_a, self.align_params.len_seq_b]
-            # max_val = self.m_matrix.get_score(self.align_params.len_seq_a, self.align_params.len_seq_b)
-            # Find max score along the highest row (last row)
-            highest_row = self.align_params.len_seq_a
-            max_val_row = float('-inf')
-            max_locations_row = []
-
-            for j in range(self.m_matrix.ncol):
-                current_score = self.m_matrix.get_score(highest_row, j)
-                if current_score > max_val_row:
-                    max_val_row = current_score
-                    max_locations_row = [(highest_row, j)]
-                elif fuzzy_equals(current_score, max_val_row):
-                    max_locations_row.append((highest_row, j))
-
-            # Find max score along the highest column (last column)
-            highest_col = self.align_params.len_seq_b
-            max_val_col = float('-inf')
-            max_locations_col = []
-
-            for i in range(self.m_matrix.nrow):
-                current_score = self.m_matrix.get_score(i, highest_col)
-                if current_score > max_val_col:
-                    max_val_col = current_score
-                    max_locations_col = [(i, highest_col)]
-                elif fuzzy_equals(current_score, max_val_col):
-                    max_locations_col.append((i, highest_col))
-
-            # Determine which has the higher score
-            if max_val_row > max_val_col:
-                return max_val_row, max_locations_row
-            elif max_val_col > max_val_row:
-                return max_val_col, max_locations_col
-            else:
-                # Both have the same max score, combine locations
-                all_locations = max_locations_row + max_locations_col
-                return max_val_row, all_locations
+            return self.find_max_score_and_location_global()
 
         if self.align_params.is_global_alignment_mode is False:
             return self.find_max_score_and_location_local()
 
-        raise("Invalid global align param value")
         return
 
     def traceback(self): ### TO-DO! FILL IN additional arguments ###
@@ -1015,8 +1021,11 @@ class Align(object):
         self.iy_matrix.print_scores()
         self.iy_matrix.print_pointers()
 
-        #if self.align_params.is_global_alignment_mode is True:
-            #print("GLOBAL ALIGNMENT")
+        if self.align_params.is_global_alignment_mode is True:
+            print("GLOBAL ALIGNMENT")
+
+        if self.align_params.is_global_alignment_mode is False:
+            print("LOCAL ALIGNMENT")
 
         for max_location in max_locations:
             print(f"max_location = {max_location}")
