@@ -865,7 +865,7 @@ class Align(object):
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
             print(f"Input pointer_to_next_cell history: {print_pointer_history}")
 
-            universal_alignments_bucket = self.universal_alignments_bucket
+            # universal_alignments_bucket = self.universal_alignments_bucket
             print(f"universal_alignments_bucket BEFORE update:")
             for alignment in self.universal_alignments_bucket:
                 print(alignment[0])
@@ -873,13 +873,15 @@ class Align(object):
                 print("\n")
 
             print(f"alignments to be added (input_alignments):")
-            for alignment in input_alignments:
+            for alignment in updated_input_alignments:
                 print(alignment[0])
                 print(alignment[1])
                 print("\n")
 
-            universal_alignments_bucket.extend(input_alignments)
-            self.universal_alignments_bucket = universal_alignments_bucket
+            finished = updated_input_alignments if updated_input_alignments else input_alignments
+            self.universal_alignments_bucket.extend(finished)
+            # universal_alignments_bucket.extend(input_alignments)
+            # self.universal_alignments_bucket = universal_alignments_bucket
             print(f"universal_alignments_bucket AFTER update:")
             for alignment in self.universal_alignments_bucket:
                 print(alignment[0])
