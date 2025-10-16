@@ -732,51 +732,56 @@ class Align(object):
         print(f"final pointers in iy_matrix_pointers cell: Iy[{row},{col}] = pointers: {self.iy_matrix.get_pointers(row, col)}")
         print(f"<<<<<<<<<<iy_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
-    def traceback_cell(self, curr_cell_score_matrix_letter, row, col, input_alignments=None, pointer_history=None):
+    def traceback_cell(self, curr_cell_matrix_letter, row, col, input_alignments=None, input_pointer_history=None):
+
+        is_global_alignment_mode: bool = self.align_params.is_global_alignment_mode
 
         seq_a = self.align_params.seq_a
         seq_b = self.align_params.seq_b
+        print(f"seq_a: {seq_a}")
+        print(f"seq_b: {seq_b}")
 
         if input_alignments is None:
             input_alignments = []
 
-        if pointer_history is None:
-            pointer_history = []
+        if input_pointer_history is None:
+            input_pointer_history = []
 
-        print(f"\n<<<<<<<<<<<<<<<<NOW STARTING TRACEBACK IN CELL: {curr_cell_score_matrix_letter} ({row}, {col})>>>>>>>>>>>>>>>>")
-
-        print(f"DEBUG:   Current matrix: {curr_cell_score_matrix_letter}")
-        print(f"DEBUG:   Position: ({row}, {col})")
-        print(f"DEBUG:   Input alignments so far: {len(input_alignments)} path(s)")
-        print_pointer_history = "--->".join(
-            [str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in pointer_history])
-        print(f"Input pointer_to_next_cell history: {print_pointer_history}")
-        
-        print(f"DEBUG: INCOMING ALIGNMENTS (reversed for readability):")
+        print(f"\n<<<<<<<<<<<<<<<<NOW STARTING TRACEBACK IN CELL: {curr_cell_matrix_letter} ({row}, {col})>>>>>>>>>>>>>>>>")
+        print(f"Current matrix: {curr_cell_matrix_letter}")
+        print(f"Current cell: ({row}, {col})")
+        print(f"Num input alignments so far: {len(input_alignments)} path(s)")
+        print(f"Input alignments (natural order):")
         if len(input_alignments) == 0:
-            print(f"DEBUG:   (empty - no alignments yet)")
+            print(f"(empty - no input alignments yet)")
         else:
             for align_idx, alignment in enumerate(input_alignments):
-                print(f"DEBUG:   Alignment {align_idx+1}:")
-                print(f"DEBUG:     Seq A: {''.join(reversed(alignment[0]))}")
-                print(f"DEBUG:     Seq B: {''.join(reversed(alignment[1]))}")
-                print()
+                print(f"\nInput alignment {align_idx+1}:")
+                print(f"Input alignment Seq A: {''.join(reversed(alignment[0]))}")
+                print(f"Input alignment Seq B: {''.join(reversed(alignment[1]))}")
 
-        if curr_cell_score_matrix_letter == "M":
+        print_pointer_history = "--->".join(
+            [str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in input_pointer_history])
+        print(f"Input pointer history: {print_pointer_history}")
+
+        if curr_cell_matrix_letter == "M":
             pointers_from_curr_cell = self.m_matrix.get_pointers(row, col)
             curr_cell_score = self.m_matrix.get_score(row, col)
-        elif curr_cell_score_matrix_letter == "Ix":
+        elif curr_cell_matrix_letter == "Ix":
             pointers_from_curr_cell = self.ix_matrix.get_pointers(row, col)
             curr_cell_score = self.ix_matrix.get_score(row, col)
-        elif curr_cell_score_matrix_letter == "Iy":
+        elif curr_cell_matrix_letter == "Iy":
             pointers_from_curr_cell = self.iy_matrix.get_pointers(row, col)
             curr_cell_score = self.iy_matrix.get_score(row, col)
         else:
-            print("DEBUG: ERROR - Invalid matrix name!")
+            print("ERROR - Invalid matrix name!")
             return
 
         print(f"curr_cell_score: {curr_cell_score}")
-        print(f"pointers_from_curr_cell: {pointers_from_curr_cell}")
+        print("pointers_from_curr_cell")
+        for pointer in pointers_from_curr_cell:
+            print(f"{pointer}")
+        print()
         self.m_matrix.print_scores()
         self.m_matrix.print_pointers()
         self.ix_matrix.print_scores()
@@ -784,54 +789,63 @@ class Align(object):
         self.iy_matrix.print_scores()
         self.iy_matrix.print_pointers()
 
-        is_global_alignment_mode: bool = self.align_params.is_global_alignment_mode
+        # cell traceback logic (given we already have variables: row, col, input_alignments, input_pointer_history,\
+        # is_global_alignment_mode, seq_a, seq_b, curr_cell_matrix_letter, curr_cell_score and pointers_from_curr_cell)
+        # 1. STOP CONDITION: If current cell score is 0 AND mode is local: save input alignments AS IS to universal bucket of alignments
+        # 2. Else, proceed to next steps:
+        # 3. Based on current cell matrix letter, determine what residues to add to incoming alignments
+        # 4. Update ALL incoming alignments with appropriate residue pair determined in step 1 above
+        # 5. STOP CONDITION: If there are NO pointers from current cell: save updated alignments to universal bucket of alignments
+        # 6. Else, proceed to next steps:
+        # 7. Get scores of next_cells from all pointers_from_curr_cell
+        # 8. If ANY M-->0 pointer exists, keep ONLY the M pointer (ie update pointers_from_curr_cell).
+        # 9. Else proceed:
+        # 10. Loop through each pointer in pointers_from_curr_cell. For each pointer in pointers_from_curr_cell:
+        # 11.       update pointer history with pointer (for debugging, this doesnt affect logic per se)
+        # 12.       get next_cell_matrix_letter, next_cell_row, next_cell_col, updated_input_alignments, updated_pointer_history
 
-        print(f"seq_a: {seq_a}")
-        print(f"seq_b: {seq_b}")
+        #1
+        if is_global_alignment_mode is False and fuzzy_equals(curr_cell_score, 0.0):
+            self.universal_alignments_bucket.extend(input_alignments)
+            return
 
-        # First we deal with curr cell letter: This determines what residues are to be added to input alignments
-        if curr_cell_score_matrix_letter == "M":
+        #2, #3
+        if curr_cell_matrix_letter == "M":
             residue_to_append_to_seq_a = seq_a[row - 1]
             print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
             residue_to_append_to_seq_b = seq_b[col - 1]
             print(f"residue_to_append_to_seq_b = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
-
             print(
-                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> No gap: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
+                f"curr_cell_score_matrix_letter is {curr_cell_matrix_letter}-> No gap: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
 
-        elif curr_cell_score_matrix_letter == "Ix":
+        elif curr_cell_matrix_letter == "Ix":
             residue_to_append_to_seq_a = seq_a[row - 1]
             print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
-
             residue_to_append_to_seq_b = "_"
             print(f"residue_to_append_to_seq_b = - : {residue_to_append_to_seq_b}")
-
             print(
-                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> gap in B: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
+                f"curr_cell_score_matrix_letter is {curr_cell_matrix_letter}-> gap in B: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
 
-        elif curr_cell_score_matrix_letter == "Iy":
+        elif curr_cell_matrix_letter == "Iy":
             residue_to_append_to_seq_a = "_"
             print(f"residue_to_append_to_seq_a = - : {residue_to_append_to_seq_a}")
-
             residue_to_append_to_seq_b = seq_b[col - 1]
             print(f"residue_to_append_to_seq_a = seq_b[{col - 1}]: {residue_to_append_to_seq_b}")
 
             print(
-                f"curr_cell_score_matrix_letter is {curr_cell_score_matrix_letter}-> gap in A: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
-
+                f"curr_cell_score_matrix_letter is {curr_cell_matrix_letter}-> gap in A: adding {residue_to_append_to_seq_a} to A and {residue_to_append_to_seq_b} from B")
         else:
             print("DEBUG: ERROR - Invalid next_cell_letter!")
             return
 
-        # Now update input alignments based on above
+        # 4
         updated_input_alignments = list()
         if len(input_alignments) == 0:
             updated_input_alignments = [[[residue_to_append_to_seq_a], [residue_to_append_to_seq_b]]]
-            # self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, pointer_history)
         else:
             # Update all input alignments with latest residue based on pointer_to_next_cell
             print(
-                f"DEBUG: UPDATING ALIGNMENTS - adding '{residue_to_append_to_seq_a}' from seq A and '{residue_to_append_to_seq_b}' from seq B:")
+                f"UPDATING INPUT ALIGNMENTS - adding '{residue_to_append_to_seq_a}' from seq A and '{residue_to_append_to_seq_b}' from seq B:")
             for input_alignment in input_alignments:
                 print(f"~~Input alignement before update: {input_alignment}")
 
@@ -859,9 +873,8 @@ class Align(object):
 
                 updated_input_alignments.append([input_alignment_seq_a_updated, input_alignment_seq_b_updated])
 
-        # Now we deal with pointers from curr cell
-        if pointers_from_curr_cell is None or (len(pointers_from_curr_cell) == 0) or \
-                (is_global_alignment_mode is False and curr_cell_score == 0):
+        # 5
+        if pointers_from_curr_cell is None or (len(pointers_from_curr_cell) == 0):
             print("<<<<<<<<<<<<<<<<<RECURSION END CASE. ADDING TO GLOBAL ALIGNMENTS>>>>>>>>>>>>>>>>>>")
             print(f"Input pointer_to_next_cell history: {print_pointer_history}")
 
@@ -878,38 +891,44 @@ class Align(object):
                 print(alignment[1])
                 print("\n")
 
-            finished = updated_input_alignments if updated_input_alignments else input_alignments
-            self.universal_alignments_bucket.extend(finished)
-            # universal_alignments_bucket.extend(input_alignments)
-            # self.universal_alignments_bucket = universal_alignments_bucket
+            final_alignments_to_add = updated_input_alignments if updated_input_alignments else input_alignments
+            self.universal_alignments_bucket.extend(final_alignments_to_add)
             print(f"universal_alignments_bucket AFTER update:")
             for alignment in self.universal_alignments_bucket:
                 print(alignment[0])
                 print(alignment[1])
                 print("\n")
+            return
 
-        else:
-            num_pointers_from_curr_cell = len(pointers_from_curr_cell)
+        #8
+        if any([pointer[0] == "M" for pointer in pointers_from_curr_cell]):
+            m_pointer = [pointer for pointer in pointers_from_curr_cell if pointer[0] == "M"][0]
+            m_pointer_score = self.m_matrix.get_score(m_pointer[1], m_pointer[2])
+            if fuzzy_equals(m_pointer_score, 0.0):
+                pointers_from_curr_cell = [m_pointer]
 
-            # for each pointer_to_next_cell:
-            # update alignment based on direction of pointer_to_next_cell
-            # M --> both curr residues added to all existing alignments in input alignments
-            # Ix --> Gap in B. include residue from seq_a
-            # Iy --> Gap in A. Include residue from seq_b
-            # Once updated, call next cell with updated input alignment and next cell details from pointer_to_next_cell
-            print(f"Looping through {num_pointers_from_curr_cell} pointers")
-            for idx, pointer_to_next_cell in enumerate(pointers_from_curr_cell):
-                print(f"\npointer_to_next_cell {idx+1}/{num_pointers_from_curr_cell}")
-                print(f"pointer_to_next_cell: {pointer_to_next_cell}")
-                pointer_history.append([curr_cell_score_matrix_letter, row, col])
-                print_pointer_history = "--->".join([str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in pointer_history])
-                print(f"Updated pointer_to_next_cell history: {print_pointer_history}")
+        num_pointers_from_curr_cell = len(pointers_from_curr_cell)
 
-                next_cell_letter = pointer_to_next_cell[0]
-                next_cell_row = pointer_to_next_cell[1]
-                next_cell_col = pointer_to_next_cell[2]
+        # 10, 11, 12
+        # for each pointer_to_next_cell:
+        # update alignment based on direction of pointer_to_next_cell
+        # M --> both curr residues added to all existing alignments in input alignments
+        # Ix --> Gap in B. include residue from seq_a
+        # Iy --> Gap in A. Include residue from seq_b
+        # Once updated, call next cell with updated input alignment and next cell details from pointer_to_next_cell
+        print(f"Looping through {num_pointers_from_curr_cell} pointers")
+        for idx, pointer_to_next_cell in enumerate(pointers_from_curr_cell):
+            print(f"\npointer_to_next_cell {idx+1}/{num_pointers_from_curr_cell}")
+            print(f"pointer_to_next_cell: {pointer_to_next_cell}")
+            input_pointer_history.append([curr_cell_matrix_letter, row, col])
+            print_pointer_history = "--->".join([str(p[0]) + "(" + str(p[1]) + "," + str(p[2]) + ")" for p in input_pointer_history])
+            print(f"Updated pointer_to_next_cell history: {print_pointer_history}")
 
-                self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, pointer_history)
+            next_cell_letter = pointer_to_next_cell[0]
+            next_cell_row = pointer_to_next_cell[1]
+            next_cell_col = pointer_to_next_cell[2]
+
+            self.traceback_cell(next_cell_letter, next_cell_row, next_cell_col, updated_input_alignments, input_pointer_history)
 
     def find_max_score_and_location_global(self):
         # Find max score along the highest row (last row)
@@ -1009,10 +1028,10 @@ class Align(object):
         """
         print("<<<<<<<<<<<<<<<<<<<<<<START TRACEBACK>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
-        max_val, max_locations = self.find_traceback_start()
-        print(f"Max score found = {max_val}")
-        print(f"Num max_locations found = {len(max_locations)}")
-        print(f"max_locations = {max_locations}")
+        best_alignment_score, traceback_start_locations = self.find_traceback_start()
+        print(f"Max score found = {best_alignment_score}")
+        print(f"Num traceback_start_locations found = {len(traceback_start_locations)}")
+        print(f"traceback_start_locations = {traceback_start_locations}")
 
         self.m_matrix.print_scores()
         self.m_matrix.print_pointers()
@@ -1027,15 +1046,15 @@ class Align(object):
         if self.align_params.is_global_alignment_mode is False:
             print("LOCAL ALIGNMENT")
 
-        for max_location in max_locations:
-            print(f"max_location = {max_location}")
-            max_coord_x = max_location[0]
-            max_coord_y = max_location[1]
-            print(f"Calling traceback_cell from M[{max_coord_x},{max_coord_y}] with score {max_val}")
-            self.traceback_cell("M", max_coord_x, max_coord_y)
+        for traceback_start_location in traceback_start_locations:
+            print(f"traceback_start_location = {traceback_start_location}")
+            traceback_start_coord_x = traceback_start_location[0]
+            traceback_start_coord_y = traceback_start_location[1]
+            print(f"Calling traceback_cell from M[{traceback_start_coord_x},{traceback_start_coord_y}] with score {best_alignment_score}")
+            self.traceback_cell("M", traceback_start_coord_x, traceback_start_coord_y)
 
         print("<<<<<<<<<<<<<<<<<<<<<<TRACEBACK COMPLETE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(f"Found {len(self.universal_alignments_bucket)} optimal alignment(s) of score {max_val}")
+        print(f"Found {len(self.universal_alignments_bucket)} optimal alignment(s) of score {best_alignment_score}")
 
         final_alignments = list()
 
@@ -1055,7 +1074,7 @@ class Align(object):
 
         final_alignments = list(set(final_alignments))
 
-        print(f"final_score: {max_val}")
+        print(f"final_score: {best_alignment_score}")
         print(f"final_alignments: {final_alignments}")
         print(self.s_matrix)
 
