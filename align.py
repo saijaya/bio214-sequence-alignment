@@ -809,6 +809,12 @@ class Align(object):
             self.universal_alignments_bucket.extend(input_alignments)
             return
 
+        # STOP if we’re at the boundary cell for this state (don’t emit!)
+        if row == 0 or col == 0:
+            finished = input_alignments if input_alignments else []
+            self.universal_alignments_bucket.extend(finished)
+            return
+
         #2, #3
         if curr_cell_matrix_letter == "M":
             residue_to_append_to_seq_a = seq_a[row - 1]
@@ -1074,6 +1080,10 @@ class Align(object):
 
         final_alignments = list(set(final_alignments))
 
+        # Store results as instance variables for comparison
+        self.final_score = best_alignment_score
+        self.final_alignments = final_alignments
+
         print(f"final_score: {best_alignment_score}")
         print(f"final_alignments: {final_alignments}")
         print(self.s_matrix)
@@ -1105,6 +1115,95 @@ def trim_reverse_join_alignment(seq_a: list, seq_b: list):
 def write_output(self):
     ### TO-DO! FILL IN ###
     pass
+
+
+def read_expected_output(filename):
+    """
+    Read expected output file and parse the format:
+    - First line: expected final score
+    - Empty line (gap)
+    - Pairs of lines: expected sequence alignments
+    """
+    with open(filename, 'r') as f:
+        lines = [line.strip() for line in f.readlines()]
+    
+    # Remove empty lines
+    lines = [line for line in lines if line]
+    
+    if not lines:
+        raise ValueError("Empty output file")
+    
+    # First line is the expected score
+    expected_score = float(lines[0])
+    
+    # Remaining lines are sequence pairs
+    expected_alignments = []
+    for i in range(1, len(lines), 2):
+        if i + 1 < len(lines):
+            seq_a = lines[i]
+            seq_b = lines[i + 1]
+            expected_alignments.append((seq_a, seq_b))
+    
+    return expected_score, expected_alignments
+
+
+def compare_outputs(align_obj, expected_output_file):
+    """
+    Compare generated output with expected output file.
+    """
+    print("\n" + "="*60)
+    print("COMPARING OUTPUTS")
+    print("="*60)
+    
+    # Read expected output
+    expected_score, expected_alignments = read_expected_output(expected_output_file)
+    
+    # Get generated results
+    generated_score = align_obj.final_score
+    generated_alignments = align_obj.final_alignments
+    
+    # Compare scores (round to 1 decimal place)
+    generated_score_rounded = round(generated_score, 1)
+    expected_score_rounded = round(expected_score, 1)
+    
+    score_match = (generated_score_rounded == expected_score_rounded)
+    print(f"Score comparison:")
+    print(f"  Expected: {expected_score} (rounded: {expected_score_rounded})")
+    print(f"  Generated: {generated_score} (rounded: {generated_score_rounded})")
+    print(f"  Match: {'YES' if score_match else 'NO'}")
+    
+    # Compare alignments
+    print(f"\nAlignment comparison:")
+    print(f"  Expected alignments: {len(expected_alignments)}")
+    print(f"  Generated alignments: {len(generated_alignments)}")
+    
+    # Convert to sets for comparison (order of alignments doesn't matter)
+    expected_set = set(expected_alignments)
+    generated_set = set(generated_alignments)
+    
+    # Find matches
+    found_alignments = expected_set.intersection(generated_set)
+    missing_alignments = expected_set - generated_set
+    extra_alignments = generated_set - expected_set
+    
+    print(f"  Found in generated: {len(found_alignments)}/{len(expected_alignments)}")
+    
+    if missing_alignments:
+        print(f"  Missing from generated: {len(missing_alignments)}")
+        for alignment in missing_alignments:
+            print(f"    Missing: {alignment[0]} | {alignment[1]}")
+    
+    if extra_alignments:
+        print(f"  Extra in generated: {len(extra_alignments)}")
+        for alignment in extra_alignments:
+            print(f"    Extra: {alignment[0]} | {alignment[1]}")
+    
+    if not missing_alignments and not extra_alignments:
+        print("  All alignments match perfectly!")
+    
+    print("="*60)
+    
+    return score_match, len(found_alignments), len(expected_alignments), len(missing_alignments), len(extra_alignments)
 
 
 def read_input_file(filename):
@@ -1192,6 +1291,24 @@ def main():
     # create an align object and run
     align = Align(input_file, output_file)
     align.align()
+    
+    # Compare with expected output
+    try:
+        score_match, found_count, expected_count, missing_count, extra_count = compare_outputs(align, output_file)
+        
+        # Print summary
+        print(f"\nSUMMARY:")
+        print(f"Score match: {'YES' if score_match else 'NO'}")
+        print(f"Alignments: {found_count}/{expected_count} found")
+        if missing_count > 0:
+            print(f"Missing: {missing_count}")
+        if extra_count > 0:
+            print(f"Extra: {extra_count}")
+            
+    except FileNotFoundError:
+        print(f"Expected output file '{output_file}' not found. Skipping comparison.")
+    except Exception as e:
+        print(f"Error during comparison: {e}")
 
 
 if __name__=="__main__":
