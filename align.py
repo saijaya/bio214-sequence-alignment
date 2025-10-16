@@ -341,8 +341,8 @@ class Align(object):
             self.m_matrix.set_score(0, j, 0.0)
 
         print("\nself.m_matrix:")
-        self.m_matrix.print_scores()
-        self.m_matrix.print_pointers()
+        # self.m_matrix.print_scores()
+        # self.m_matrix.print_pointers()
 
         self.ix_matrix = ScoreMatrix("Ix", num_rows_in_score_matrices, num_columns_in_score_matrices)
         for i in range(num_rows_in_score_matrices):
@@ -352,8 +352,8 @@ class Align(object):
             self.ix_matrix.set_score(0, j, 0.0)
 
         print("\nself.ix_matrix:")
-        self.ix_matrix.print_scores()
-        self.ix_matrix.print_pointers()
+        # self.ix_matrix.print_scores()
+        # self.ix_matrix.print_pointers()
 
         self.iy_matrix = ScoreMatrix("Iy", num_rows_in_score_matrices, num_columns_in_score_matrices)
         for i in range(num_rows_in_score_matrices):
@@ -363,8 +363,8 @@ class Align(object):
             self.iy_matrix.set_score(0, j, 0.0)
 
         print("\nself.iy_matrix:")
-        self.iy_matrix.print_scores()
-        self.iy_matrix.print_pointers()
+        # self.iy_matrix.print_scores()
+        # self.iy_matrix.print_pointers()
 
         """
         self.m_matrix = np.empty((num_rows_in_score_matrices, num_columns_in_score_matrices))
@@ -404,7 +404,7 @@ class Align(object):
 
         print("\nfinal version of m_matrix:")
         # print(self.m_matrix)
-        self.m_matrix.print_scores()
+        # self.m_matrix.print_scores()
 
         print("\nfinal version of m_matrix_pointers:")
         # print_pointer_matrix(self.m_matrix_pointers)
@@ -412,19 +412,19 @@ class Align(object):
 
         print("\nfinal version of ix_matrix:")
         # print(self.ix_matrix)
-        self.ix_matrix.print_scores()
+        # self.ix_matrix.print_scores()
 
         print("\nfinal version of ix_matrix_pointers:")
         # print_pointer_matrix(self.ix_matrix_pointers)
-        self.ix_matrix.print_pointers()
+        # self.ix_matrix.print_pointers()
 
         print("\nfinal version of iy_matrix:")
         # print(self.iy_matrix)
-        self.iy_matrix.print_scores()
+        # self.iy_matrix.print_scores()
 
         print("\nfinal version of iy_matrix_pointers:")
         # print_pointer_matrix(self.iy_matrix_pointers)
-        self.iy_matrix.print_pointers()
+        # self.iy_matrix.print_pointers()
 
     def update(self, row, col):
         """
@@ -489,21 +489,21 @@ class Align(object):
         print(f"score from m_matrix: M[{row-1},{col-1}]: {self.m_matrix.get_score(row - 1, col - 1):.2f} + {s_ij_match} = {score_from_m_matrix:.2f}")
         print("m_matrix:")
         # print(self.m_matrix)
-        self.m_matrix.print_scores()
+        # self.m_matrix.print_scores()
         # score_from_ix_matrix = self.ix_matrix[row - 1, col - 1] + s_ij_match
         score_from_ix_matrix = self.ix_matrix.get_score(row - 1, col - 1) + s_ij_match
         # print(f"score from ix_matrix: Ix[{row-1},{col-1}]: {self.ix_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_ix_matrix:.2f}")
         print(f"score from ix_matrix: Ix[{row-1},{col-1}]: {self.ix_matrix.get_score(row - 1, col - 1):.2f} + {s_ij_match} = {score_from_ix_matrix:.2f}")
         print("ix_matrix:")
         # print(self.ix_matrix)
-        self.ix_matrix.print_scores()
+        # self.ix_matrix.print_scores()
         # score_from_iy_matrix = self.iy_matrix[row - 1, col - 1] + s_ij_match
         score_from_iy_matrix = self.iy_matrix.get_score(row - 1, col - 1) + s_ij_match
         #print(f"score from iy_matrix: Iy[{row-1},{col-1}]: {self.iy_matrix[row - 1, col - 1]:.2f} + {s_ij_match} = {score_from_iy_matrix:.2f}")
         print(f"score from iy_matrix: Iy[{row-1},{col-1}]: {self.iy_matrix.get_score(row - 1, col - 1):.2f} + {s_ij_match} = {score_from_iy_matrix:.2f}")
         print("iy_matrix:")
         # print(self.iy_matrix)
-        self.iy_matrix.print_scores()
+        # self.iy_matrix.print_scores()
 
         max_score = max(score_from_m_matrix, score_from_ix_matrix, score_from_iy_matrix)
         print(f"max_score of 3 scores: {max_score:.2f}")
@@ -518,7 +518,7 @@ class Align(object):
         # self.m_matrix = m_matrix
         self.m_matrix.set_score(row, col, final_max_score)
         print("udpated m_matrix:")
-        self.m_matrix.print_scores()
+        # self.m_matrix.print_scores()
         # print(m_matrix)
 
         print(f"<<<<<<<<<<m_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
@@ -583,12 +583,12 @@ class Align(object):
 
         print("self.m_matrix:")
         # print(self.m_matrix)
-        self.m_matrix.print_scores()
+        # self.m_matrix.print_scores()
 
         # ix_matrix = self.ix_matrix
         print("before update ix_matrix:")
         # print(ix_matrix)
-        self.ix_matrix.print_pointers()
+        # self.ix_matrix.print_pointers()
 
         print("in order to update score in current cell, we need max of 2 scores")
         # score_from_m_matrix = self.m_matrix[row-1, col] - dy
@@ -614,7 +614,7 @@ class Align(object):
         self.ix_matrix.set_score(row, col, final_max_score)
         print("updated ix_matrix:")
         # print(ix_matrix)
-        self.ix_matrix.print_scores()
+        # self.ix_matrix.print_scores()
 
         print(f"<<<<<<<<<<ix_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
         # If local alignment and final_score is 0.0, no pointers
@@ -669,12 +669,12 @@ class Align(object):
 
         print("self.m_matrix:")
         # print(self.m_matrix)
-        self.m_matrix.print_scores()
+        # self.m_matrix.print_scores()
 
         # iy_matrix = self.iy_matrix
         print("before update iy_matrix:")
         # print(iy_matrix)
-        self.iy_matrix.print_scores()
+        # self.iy_matrix.print_scores()
 
         print("in order to update score in current cell, we need max of 2 scores")
         # score_from_m_matrix = self.m_matrix[row, col-1] - dx
@@ -700,7 +700,7 @@ class Align(object):
         self.iy_matrix.set_score(row, col, final_max_score)
         print("updated iy_matrix:")
         # print(iy_matrix)
-        self.iy_matrix.print_scores()
+        # self.iy_matrix.print_scores()
 
         print(f"<<<<<<<<<<iy_matrix cell value updated ({row},{col})>>>>>>>>>>>>>>")
         # If local alignment and final_score is 0.0, no pointers
@@ -782,12 +782,14 @@ class Align(object):
         for pointer in pointers_from_curr_cell:
             print(f"{pointer}")
         print()
+        """
         self.m_matrix.print_scores()
         self.m_matrix.print_pointers()
         self.ix_matrix.print_scores()
         self.ix_matrix.print_pointers()
         self.iy_matrix.print_scores()
         self.iy_matrix.print_pointers()
+        """
 
         # cell traceback logic (given we already have variables: row, col, input_alignments, input_pointer_history,\
         # is_global_alignment_mode, seq_a, seq_b, curr_cell_matrix_letter, curr_cell_score and pointers_from_curr_cell)
@@ -1039,12 +1041,14 @@ class Align(object):
         print(f"Num traceback_start_locations found = {len(traceback_start_locations)}")
         print(f"traceback_start_locations = {traceback_start_locations}")
 
+        """
         self.m_matrix.print_scores()
         self.m_matrix.print_pointers()
         self.ix_matrix.print_scores()
         self.ix_matrix.print_pointers()
         self.iy_matrix.print_scores()
         self.iy_matrix.print_pointers()
+        """
 
         if self.align_params.is_global_alignment_mode is True:
             print("GLOBAL ALIGNMENT")
@@ -1086,7 +1090,7 @@ class Align(object):
 
         print(f"final_score: {best_alignment_score}")
         print(f"final_alignments: {final_alignments}")
-        print(self.s_matrix)
+        # print(self.s_matrix)
 
 
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
