@@ -415,7 +415,8 @@ class Align(object):
         if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
                 print("local alginment. cell score 0.0. no pointers from cell")
         else:
-
+            # Here is my traceback pointer approach
+            # Here I set pointer from current cell (to the cell(s) that led to best score)
             if fuzzy_equals(score_from_m_matrix, max_score):
                 print(f"adding [M, {row-1}, {col-1}]")
                 self.m_matrix.set_pointers(row, col, ["M", row-1, col-1])
@@ -483,6 +484,8 @@ class Align(object):
         if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
                 print("local alginment. cell score 0.0. no pointers from cell")
         else:
+            # Here is my traceback pointer approach
+            # Here I set pointer from current cell (to the cell(s) that led to best score)
             if fuzzy_equals(score_from_m_matrix, max_score):
                 print(f"adding [M, {row-1}, {col}]")
                 self.ix_matrix.set_pointers(row, col, ["M", row-1, col])
@@ -545,6 +548,8 @@ class Align(object):
         if global_alignment is False and fuzzy_equals(0.0, final_max_score) is True:
             print("local alginment. cell score 0.0. no pointers from cell")
         else:
+            # Here is my traceback pointer approach
+            # Here I set pointer from current cell (to the cell(s) that led to best score)
             if fuzzy_equals(score_from_m_matrix, max_score):
                 print(f"adding [M, {row}, {col-1}]")
                 self.iy_matrix.set_pointers(row, col, ["M", row, col-1])
@@ -557,6 +562,7 @@ class Align(object):
         print(f"final pointers in iy_matrix_pointers cell: Iy[{row},{col}] = pointers: {self.iy_matrix.get_pointers(row, col)}")
         print(f"<<<<<<<<<<iy_matrix cell pointers updated ({row},{col})>>>>>>>>>>>>>>")
 
+    # Here is my other traceback feature
     def traceback_cell(self, curr_cell_matrix_letter, row, col, input_alignments=None, input_pointer_history=None):
 
         is_global_alignment_mode: bool = self.align_params.is_global_alignment_mode
@@ -917,6 +923,7 @@ class Align(object):
         print(f"final_alignments: {final_alignments}")
 
 
+# Here is my other traceback feature
 def trim_reverse_join_alignment(seq_a: list, seq_b: list):
     def trim_sequences(seq_a: list, seq_b: list):
         while len(seq_a) > 0 and len(seq_b) > 0:
