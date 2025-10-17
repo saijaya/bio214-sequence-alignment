@@ -70,15 +70,39 @@ class ScoreCell(object):
         self.pointers = list()
 
     def set_cell_score(self, score):
+        """
+        Sets the score for this cell.
+        
+        Input:
+            score = the score value to set
+        """
         self.score = score
 
     def get_cell_score(self):
+        """
+        Returns the score for this cell.
+        
+        Returns:
+            the score value of this cell
+        """
         return self.score
 
     def add_cell_pointer(self, pointer_tuple):
+        """
+        Adds a pointer to this cell.
+        
+        Input:
+            pointer_tuple = the pointer tuple to add
+        """
         self.pointers.append(pointer_tuple)
 
     def get_cell_pointers(self):
+        """
+        Returns the list of pointers for this cell.
+        
+        Returns:
+            list of pointer tuples
+        """
         return self.pointers
 
 
@@ -101,10 +125,27 @@ class ScoreMatrix(object):
         # Hint: it may be helpful to have an object for each entry
 
     def get_score(self, row, col):
+        """
+        Returns the score at the specified row and column.
+        
+        Input:
+            row = the row index
+            col = the column index
+        Returns:
+            the score value at the specified position
+        """
         ### TO-DO! FILL IN ###
         return self.score_matrix[row, col].get_cell_score()
 
-    def set_score(self, row, col, score):    
+    def set_score(self, row, col, score):
+        """
+        Sets the score at the specified row and column.
+        
+        Input:
+            row = the row index
+            col = the column index
+            score = the score value to set
+        """
         ### TO-DO! FILL IN ###
         self.score_matrix[row, col].set_cell_score(score=score)
 
@@ -117,7 +158,16 @@ class ScoreMatrix(object):
         ### TO-DO! FILL IN ###
         return self.score_matrix[row, col].get_cell_pointers()
 
-    def set_pointers(self, row, col, pointer: list): ### TO-DO! FILL IN - this needs additional arguments ###
+    def set_pointers(self, row, col, pointer: list):
+        """
+        Sets a pointer at the specified row and column.
+        
+        Input:
+            row = the row index
+            col = the column index
+            pointer = the pointer list to add (should be length 3)
+        """
+        ### TO-DO! FILL IN - this needs additional arguments ###
         ### TO-DO! FILL IN ###
         assert len(pointer) == 3, "invalid pointer"
         curr_pointers = self.score_matrix[row, col].get_cell_pointers()
@@ -608,12 +658,11 @@ class Align(object):
 
         return
 
-    def traceback(self): ### TO-DO! FILL IN additional arguments ###
+    def traceback(self):
         """
-        Performs a traceback.
+        Performs a traceback to find optimal alignments.
         Hint: include a way to printing the traceback path. This will be helpful for debugging!
            ex. M(5,4)->Iy(4,3)->M(4,2)->Ix(3,1)->Ix(2,1)->M(1,1)->M(0,0)
-
         """
         best_alignment_score, traceback_start_locations = self.find_traceback_start()
 
@@ -753,6 +802,13 @@ def read_input_file(filename):
 
 
 def main():
+    """
+    Main function to run the alignment program.
+    
+    Expects command line arguments:
+        sys.argv[1] = input file path
+        sys.argv[2] = output file path
+    """
     # check that the file is being properly used
     if (len(sys.argv) !=3):
         # ~print("Please specify an input file and an output file as args.")
