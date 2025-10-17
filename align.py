@@ -642,13 +642,15 @@ class Align(object):
             self.universal_alignments_bucket.extend(input_alignments)
             return
 
-        # STOP if we’re at the boundary cell for this state (don’t emit!)
+        # Here is one of the bug fixes I mentioned in my quiz
         if row == 0 or col == 0:
             finished = input_alignments if input_alignments else []
             self.universal_alignments_bucket.extend(finished)
             return
 
         #2, #3
+        # Here is one of the bug fixes I mentioned in my quiz
+        # Append residues based on curr cell first before passing on to pointer cells
         if curr_cell_matrix_letter == "M":
             residue_to_append_to_seq_a = seq_a[row - 1]
             print(f"residue_to_append_to_seq_a = seq_a[{row - 1}]: {residue_to_append_to_seq_a}")
