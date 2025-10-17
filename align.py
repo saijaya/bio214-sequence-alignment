@@ -1117,23 +1117,20 @@ def main():
     align = Align(input_file, output_file)
     align.align()
     
-    # Compare with expected output
-    try:
-        score_match, found_count, expected_count, missing_count, extra_count = compare_outputs(align, output_file)
+    # Write output to file
+    with open(output_file, 'w') as f:
+        # Write score rounded to 1 decimal place
+        f.write(f"{round(align.final_score, 1)}\n")
+        f.write("\n")  # Gap line
         
-        # Print summary
-        print(f"\nSUMMARY:")
-        print(f"Score match: {'YES' if score_match else 'NO'}")
-        print(f"Alignments: {found_count}/{expected_count} found")
-        if missing_count > 0:
-            print(f"Missing: {missing_count}")
-        if extra_count > 0:
-            print(f"Extra: {extra_count}")
-            
-    except FileNotFoundError:
-        print(f"Expected output file '{output_file}' not found. Skipping comparison.")
-    except Exception as e:
-        print(f"Error during comparison: {e}")
+        # Write alignments
+        for i, (seq_a, seq_b) in enumerate(align.final_alignments):
+            f.write(f"{seq_a}\n")
+            f.write(f"{seq_b}\n")
+            if i < len(align.final_alignments) - 1:  # Add gap line between alignments (except after last)
+                f.write("\n")
+    
+    print(f"Output written to {output_file}")
 
 
 if __name__=="__main__":
