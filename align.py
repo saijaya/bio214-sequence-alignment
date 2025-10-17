@@ -289,6 +289,7 @@ class Align(object):
 
         print("!!Initializing ScoreMatrix")
         self.m_matrix = ScoreMatrix("M", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        # Here is where I could add end-gap penalties
         for i in range(num_rows_in_score_matrices):
             self.m_matrix.set_score(i, 0, 0.0)
 
@@ -300,6 +301,7 @@ class Align(object):
         # self.m_matrix.print_pointers()
 
         self.ix_matrix = ScoreMatrix("Ix", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        # Here is where I could add end-gap penalties
         for i in range(num_rows_in_score_matrices):
             self.ix_matrix.set_score(i, 0, 0.0)
 
@@ -311,6 +313,7 @@ class Align(object):
         # self.ix_matrix.print_pointers()
 
         self.iy_matrix = ScoreMatrix("Iy", num_rows_in_score_matrices, num_columns_in_score_matrices)
+        # Here is where I could add end-gap penalties
         for i in range(num_rows_in_score_matrices):
             self.iy_matrix.set_score(i, 0, 0.0)
 
