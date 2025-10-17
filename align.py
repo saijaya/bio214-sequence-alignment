@@ -1,13 +1,19 @@
 """
+Sequence Alignment Implementation
 
-This file provides skeleton code for align.py. 
+This module implements sequence alignment algorithms for biological sequences.
+It supports both global and local alignment with configurable scoring matrices
+and gap penalties. The implementation uses dynamic programming with three
+score matrices (M, Ix, Iy) to handle matches/mismatches and insertions/deletions.
 
-Locations with "FILL IN" in comments are where you need to add code.
-
-Note - you MUST follow this structure or else the autograder will not run properly
+Classes:
+    MatchMatrix: Stores scoring information for character matches
+    ScoreCell: Represents a single cell in the score matrix with score and pointers
+    ScoreMatrix: Manages the 2D score matrix for alignment calculations
+    AlignmentParameters: Holds alignment configuration and parameters
+    Align: Main alignment class that performs the alignment process
 
 Usage: python align.py input_file output_file
-
 """
 
 
