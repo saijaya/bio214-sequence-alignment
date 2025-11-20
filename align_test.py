@@ -58,7 +58,7 @@ class TestAlignmentClasses(unittest.TestCase):
         align_params.load_params_from_file(TEST_INPUT_FILE)
         self.assertEqual(align_params.seq_a, "AATGC")
         self.assertEqual(align_params.seq_b, "AGGC")
-        self.assertTrue(align_params.global_alignment)
+        self.assertTrue(align_params.is_global_alignment_mode)
         self.assertEqual(align_params.dx, 0.1)
         self.assertEqual(align_params.ex, 0.5)
         self.assertEqual(align_params.dy, 0.6)

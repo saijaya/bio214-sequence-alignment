@@ -1,0 +1,97 @@
+flowchart TD
+  A[Start: Align.align] --> B[AlignmentParameters.load_params_from_file]
+  B --> B1[Read input file and parse parameters]
+  B1 --> B2[Extract: seq_a, seq_b, gap penalties, alphabets]
+  B2 --> B3[Build match_matrix as DataFrame from residue pairs and scores]
+  B3 --> B4[Compute len_seq_a and len_seq_b from sequences]
+  B4 --> C[Align.populate_score_matrices]
+
+  subgraph Init [Initialize Matrices]
+    direction TB
+    C --> D[Compute sizes: rows = len_seq_a + 1, cols = len_seq_b + 1]
+    D --> E[Create m_matrix, ix_matrix, iy_matrix: numpy arrays rows x cols]
+    E --> F[Create pointer matrices: m_matrix_pointers, ix_matrix_pointers, iy_matrix_pointers dtype=object]
+    F --> G[Initialize all score matrices: first row and first col = 0.0]
+    G --> H[Convert match_matrix to DataFrame: s_matrix for lookup]
+  end
+
+  H --> J{Traverse cells: row 1 to len_seq_a, col 1 to len_seq_b}
+
+  subgraph UpdateCell [Update Cell: update row, col]
+    direction TB
+    J --> K[Call update: triggers update_m, update_ix, update_iy]
+    
+    K --> K0[update_m: Calculate M i,j]
+    K0 --> K1["Lookup s(xi,yj) from s_matrix<br/>where xi=seq_a[row-1], yj=seq_b[col-1]"]
+    K1 --> K2["score_M = M[i-1,j-1] + s(xi,yj)<br/>score_Ix = Ix[i-1,j-1] + s(xi,yj)<br/>score_Iy = Iy[i-1,j-1] + s(xi,yj)<br/>max_score = max(score_M, score_Ix, score_Iy)"]
+    K2 --> K3{Global or Local?}
+    K3 -->|Local| K4["M(i,j) = max(0, max_score)"]
+    K3 -->|Global| K5["M(i,j) = max_score"]
+    K4 --> K6{Score is 0.0 in Local?}
+    K5 --> K7[Store pointers for max scores]
+    K6 -->|Yes| K8[No pointers stored]
+    K6 -->|No| K7
+    K7 --> K9["Add pointer for each tied max:<br/>(M, i-1, j-1) if score_M == max<br/>(Ix, i-1, j-1) if score_Ix == max<br/>(Iy, i-1, j-1) if score_Iy == max"]
+    K8 --> L
+    K9 --> L
+    
+    L[update_ix: Calculate Ix i,j - gap in seq B]
+    L --> L1["score_M = M(i-1,j) - dy<br/>score_Ix = Ix(i-1,j) - ey<br/>max_score = max(score_M, score_Ix)"]
+    L1 --> L2{Global or Local?}
+    L2 -->|Local| L3["Ix(i,j) = max(0, max_score)"]
+    L2 -->|Global| L4["Ix(i,j) = max_score"]
+    L3 --> L5{Score is 0.0 in Local?}
+    L4 --> L6[Store pointers for max scores]
+    L5 -->|Yes| L7[No pointers stored]
+    L5 -->|No| L6
+    L6 --> L8["Add pointer for each tied max:<br/>(M, i-1, j) if score_M == max<br/>(Ix, i-1, j) if score_Ix == max"]
+    L7 --> M
+    L8 --> M
+    
+    M[update_iy: Calculate Iy i,j - gap in seq A]
+    M --> M1["score_M = M(i,j-1) - dx<br/>score_Iy = Iy(i,j-1) - ex<br/>max_score = max(score_M, score_Iy)"]
+    M1 --> M2{Global or Local?}
+    M2 -->|Local| M3["Iy(i,j) = max(0, max_score)"]
+    M2 -->|Global| M4["Iy(i,j) = max_score"]
+    M3 --> M5{Score is 0.0 in Local?}
+    M4 --> M6[Store pointers for max scores]
+    M5 -->|Yes| M7[No pointers stored]
+    M5 -->|No| M6
+    M6 --> M8["Add pointer for each tied max:<br/>(M, i, j-1) if score_M == max<br/>(Iy, i, j-1) if score_Iy == max"]
+    M7 --> M9[Cell update complete]
+    M8 --> M9
+  end
+
+  M9 --> Q{More cells to process?}
+  Q -->|Yes| J
+  Q -->|No| R[find_traceback_start]
+  
+  subgraph Traceback [Traceback: Find Optimal Alignments]
+    direction TB
+    R --> R1{Global or Local?}
+    R1 -->|Global| R2["Find max in M, Ix, Iy matrices<br/>at last row/column edges<br/>Return max_score, (len_seq_a, len_seq_b)"]
+    R1 -->|Local| R3["Find max score anywhere in M matrix<br/>Return max_score, (i, j) location(s)"]
+    R2 --> S
+    R3 --> S
+    
+    S[traceback: Call traceback_cell from start location]
+    S --> S0["traceback_cell(M, start_row, start_col)"]
+    S0 --> S1{Base case: No pointers?}
+    S1 -->|Yes| S2[Add current alignment to global_alignments<br/>Return from recursion]
+    S1 -->|No| S3[Get pointers from current matrix at row, col]
+    S3 --> S4["For each pointer: (matrix_name, next_row, next_col)"]
+    S4 --> S5{Which matrix pointed from?}
+    S5 -->|M| S6["M pointer means match/mismatch:<br/>Append seq_a(row-1) to alignment A<br/>Append seq_b(col-1) to alignment B<br/>Recurse: traceback_cell(ptr_matrix, row-1, col-1)"]
+    S5 -->|Ix| S7["Ix pointer means gap in B:<br/>Append seq_a(row-1) to alignment A<br/>Append '_' to alignment B<br/>Recurse: traceback_cell(ptr_matrix, row-1, col)"]
+    S5 -->|Iy| S8["Iy pointer means gap in A:<br/>Append '-' to alignment A<br/>Append seq_b(col-1) to alignment B<br/>Recurse: traceback_cell(ptr_matrix, row, col-1)"]
+    S6 --> S9{More pointers from this cell?}
+    S7 --> S9
+    S8 --> S9
+    S9 -->|Yes| S4
+    S9 -->|No| S10[All paths traced from this cell]
+  end
+  
+  S2 --> T
+  S10 --> T
+  T[write_output: Format and output best score and all optimal alignments]
+  T --> U[End]

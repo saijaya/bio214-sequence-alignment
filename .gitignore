@@ -28,6 +28,7 @@ wheels/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/
 
 # IDE
 .vscode/
